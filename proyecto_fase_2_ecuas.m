@@ -583,7 +583,7 @@ function outerFunction()
     end
 
     function plotDamped()
-        lambda = lamdaValue.Value / 2;
+        lambda = lambdaValue.Value / 2;
         root = lambda.^2 - wSquaredValue.Value;
 
         if root > 0
