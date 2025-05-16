@@ -124,6 +124,26 @@ function outerFunction()
         "Value", 0.5, ...
         "ValueChangedFcn", @(src, event) onBetaChange(src, event));
 
+    % F0 (Fuerza externa)
+    F0Label = uilabel(rightPanel, "Text", "F0 (Fuerza externa)");
+    
+    F0Value = uieditfield(rightPanel, "numeric", ...
+        "Limits", [0 1000000000], ...
+        "LowerLimitInclusive", "off", ...
+        "ValueDisplayFormat", "%.2f N", ...
+        "Value", 10, ...
+        "ValueChangedFcn", @(src, event) plotFunction()); % Llama a plotFunction al cambiar
+
+    % Y (Frecuencia fuerza externa)
+    gammaLabel = uilabel(rightPanel, "Text", "γ (Frecuencia)");
+    
+    gammaValue = uieditfield(rightPanel, "numeric", ...
+        "Limits", [0 1000000000], ...
+        "LowerLimitInclusive", "on", ...
+        "ValueDisplayFormat", "%.2f rad/s", ...
+        "Value", 5, ...
+        "ValueChangedFcn", @(src, event) plotFunction());
+
     % 2λ
     lambdaLabel = uilabel(rightPanel, "Text", "2λ");
     
@@ -334,6 +354,12 @@ function outerFunction()
         xt2Label.Visible        = 'off';
         xt2Value.Visible        = 'off';
 
+        F0Label.Visible         = 'off';
+        F0Value.Visible         = 'off';
+        
+        gammaLabel.Visible      = 'off';
+        gammaValue.Visible      = 'off';
+
         alternativeSolutionLabel.Visible = 'off';
     end
 
@@ -349,6 +375,8 @@ function outerFunction()
                 undampedPostions();
             case 1
                 dampedPositions();
+            case 2
+                forzedPositions();
         end
     end
 
@@ -510,6 +538,85 @@ function outerFunction()
         solutionLabel.Position = [10, 350, 500, 22];
     end
 
+    function forzedPositions()
+        % Posición de los elementos para movimiento forzado
+        weightLabel.Position = [10, 1020, 150, 22];
+        weightLabel.Visible = 'on';
+        weight.Position = [10, 1000, 100, 22];
+        weight.Visible = 'on';
+        
+        F0Label.Position = [10, 970, 150, 22];
+        F0Label.Visible = 'on';
+        F0Value.Position = [10, 950, 100, 22];
+        F0Value.Visible = 'on';
+        
+        gammaLabel.Position = [10, 920, 150, 22];
+        gammaLabel.Visible = 'on';
+        gammaValue.Position = [10, 900, 100, 22];
+        gammaValue.Visible = 'on';   
+
+    % Weight
+    weightLabel.Position = [10, 1020, 150, 22];
+    weightLabel.Visible = 'on';
+    weight.Position = [10, 1000, 100, 22];
+    weight.Visible = 'on';
+    
+    % Spring constant
+    kLabel.Position = [10, 970, 150, 22];
+    kLabel.Visible = 'on';
+    kValue.Position = [10, 950, 100, 22];
+    kValue.Visible = 'on';
+    
+    % Omega squared
+    wSquaredLabel.Position = [10, 920, 150, 22];
+    wSquaredLabel.Visible = 'on';
+    wSquaredValue.Position = [10, 900, 100, 22];
+    wSquaredValue.Visible = 'on';
+    
+    % Omega
+    wLabel.Position = [10, 870, 150, 22];
+    wLabel.Visible = 'on';
+    wValue.Position = [10, 850, 100, 22];
+    wValue.Visible = 'on';
+    
+    % Mass
+    massLabel.Position = [10, 820, 150, 22];
+    massLabel.Visible = 'on';
+    massValue.Position = [10, 800, 100, 22];
+    massValue.Visible = 'on';
+
+    % Beta (β)
+    betaLabel.Position = [10, 770, 100, 22];
+    betaLabel.Visible = 'on';
+    betaValue.Position = [10, 750, 100, 22];
+    betaValue.Visible = 'on';
+
+    % Lambda (λ)
+    lambdaLabel.Position = [10, 720, 100, 22];
+    lambdaLabel.Visible = 'on';
+    lambdaValue.Position = [10, 700, 100, 22];
+    lambdaValue.Visible = 'on';
+    
+    % X (Alargamiento)
+    xLabel.Position = [10, 670, 150, 22];
+    xLabel.Visible = 'on';
+    xValue.Position = [10, 650, 100, 22];
+    xValue.Visible = 'on';
+    
+    % ▼▼▼ Campos nuevos para fuerza externa ▼▼▼
+    % F0 (Fuerza externa)
+    F0Label.Position = [10, 620, 150, 22];
+    F0Label.Visible = 'on';
+    F0Value.Position = [10, 600, 100, 22];
+    F0Value.Visible = 'on';
+    
+    % γ (Frecuencia fuerza externa)
+    gammaLabel.Position = [10, 570, 150, 22];
+    gammaLabel.Visible = 'on';
+    gammaValue.Position = [10, 550, 100, 22];
+    gammaValue.Visible = 'on';     
+    end
+
 
     function plotFunction()
         switch application
@@ -517,6 +624,8 @@ function outerFunction()
                 plotUndamped();
             case 1
                 plotDamped();
+            case 2
+                plotForzed();
         end
     end
 
@@ -594,5 +703,69 @@ function outerFunction()
             
         end
 
+    end
+
+    function plotForzed()
+        % Parámetros del sistema
+        m = massValue.Value;
+        beta = betaValue.Value;
+        k = kValue.Value;
+        F0 = F0Value.Value;
+        gamma = gammaValue.Value;
+        w = sqrt(k/m); % Frecuencia natural
+        lambda = beta / (2*m);
+        
+        % Condiciones iniciales (usamos los valores de los campos xValue y xt2Value)
+        x0 = xValue.Value; % Posición inicial (x(0))
+        v0 = xt2Value.Value; % Velocidad inicial (x'(0))
+        
+        % Solución homogénea (transitorio)
+        t = linspace(0, 10, 1000);
+        discriminant = lambda^2 - w^2;
+        
+        if discriminant > 0 % Sobreamortiguado
+            r1 = -lambda + sqrt(discriminant);
+            r2 = -lambda - sqrt(discriminant);
+            % Sistema de ecuaciones para C1 y C2:
+            % x0 = C1 + C2
+            % v0 = r1*C1 + r2*C2
+            A = [1, 1; r1, r2];
+            B = [x0; v0];
+            C = A \ B;
+            C1 = C(1);
+            C2 = C(2);
+            x_h = C1*exp(r1*t) + C2*exp(r2*t);
+            
+        elseif discriminant == 0 % Críticamente amortiguado
+            r = -lambda;
+            % Solución: x_h = (C1 + C2*t)*exp(r*t)
+            % Condiciones iniciales:
+            % x0 = C1
+            % v0 = r*C1 + C2
+            C1 = x0;
+            C2 = v0 - r*C1;
+            x_h = (C1 + C2*t) .* exp(r*t);
+            
+        else % Subamortiguado
+            w_d = sqrt(w^2 - lambda^2);
+            % Solución: x_h = exp(-lambda*t)*(C1*cos(w_d*t) + C2*sin(w_d*t))
+            % Condiciones iniciales:
+            % x0 = C1
+            % v0 = -lambda*C1 + w_d*C2
+            C1 = x0;
+            C2 = (v0 + lambda*C1) / w_d;
+            x_h = exp(-lambda*t) .* (C1*cos(w_d*t) + C2*sin(w_d*t));
+        end
+        
+        % Solución particular (estacionaria)
+        X = F0 / sqrt((k - m*gamma^2)^2 + (beta*gamma)^2);
+        phi = atan2(beta*gamma, k - m*gamma^2);
+        x_p = X * cos(gamma*t - phi);
+        
+        % Solución total
+        x = x_h + x_p;
+        
+        plot(ax, t, x);
+        title(ax, 'Resortes: Movimiento forzado');
     end
 end
