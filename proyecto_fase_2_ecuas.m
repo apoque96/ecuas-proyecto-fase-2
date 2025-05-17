@@ -33,7 +33,7 @@ function outerFunction()
         end
         positions();
     end
-    
+
     btnUndamped = uiradiobutton(bg, "Value", 1, ...
         "Text", "Resortes: Movimiento libre no amortiguado", ...
         "Position", [0, 66, 250, 20]);
@@ -69,70 +69,69 @@ function outerFunction()
     
     weight = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f lbs", ...
         "Value", 24, ...
-        "ValueChangedFcn", @(src, event) onWeightChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % K (Constante del resorte)
     kLabel = uilabel(rightPanel, "Text", "K (Constante del resorte)");
     
     kValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f lb/ft", ...
         "Value", 72, ...
-        "ValueChangedFcn", @(src, event) onKChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % ω² (omega cuadrado)
     wSquaredLabel = uilabel(rightPanel, "Text", "ω² (omega cuadrado)");
     
     wSquaredValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.4f", ...
         "Value", 96, ...
-        "Editable", "off");
+        "Editable", "on", ...
+        "ValueChangedFcn", @(src, event) plotFunction());
+
     
     % w (omega)
     wLabel = uilabel(rightPanel, "Text", "ω (omega)");
     
     wValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.4f", ...
         "Value", 9.7980, ...
-        "Editable", "off");
-    
+        "Editable", "on", ...
+        "ValueChangedFcn", @(src, event) plotFunction());
     % m (Masa)
     massLabel = uilabel(rightPanel, "Text", "m (Masa)");
     
     massValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f slugs", ...
         "Value", 0.75, ...
-        "ValueChangedFcn", @(src, event) onMassChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
 
     % β
     betaLabel = uilabel(rightPanel, "Text", "β");
     
     betaValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f", ...
         "Value", 0.5, ...
-        "ValueChangedFcn", @(src, event) onBetaChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
 
     % F0 (Fuerza externa)
-    F0Label = uilabel(rightPanel, "Text", "F0 (Fuerza externa)");
-    
-    F0Value = uieditfield(rightPanel, "numeric", ...
-        "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
-        "ValueDisplayFormat", "%.2f lbs", ...
-        "Value", 10, ...
-        "ValueChangedFcn", @(src, event) plotFunction()); % Llama a plotFunction al cambiar
+    F0Label = uilabel(rightPanel, "Text", "F(t)"); % ←¡Crear como uilabel!
+    F0Label.Text = "F(t)";
+    F0Value = uieditfield(rightPanel, "text", ...
+        "Value", "10*cos(5*t)", ... 
+        "ValueChangedFcn", @(src, event) plotFunction());
 
     % Y (Frecuencia fuerza externa)
     gammaLabel = uilabel(rightPanel, "Text", "γ (Frecuencia)");
@@ -149,10 +148,10 @@ function outerFunction()
     
     lambdaValue = uieditfield(rightPanel, "numeric", ...
         "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "off", ...
+        "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f", ...
         "Value", 0.5, ...
-        "ValueChangedFcn", @(src, event) onLambdaChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
 
     % x (Alargamiento)
     xLabel = uilabel(rightPanel, "Text", "x (Alargamiento)");
@@ -162,7 +161,7 @@ function outerFunction()
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f ft", ...
         "Value", 1/3, ...
-        "ValueChangedFcn", @(src, event) onXChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % t (tiempo)
     tLabel = uilabel(rightPanel, "Text", "t (tiempo)");
@@ -172,7 +171,7 @@ function outerFunction()
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f s", ...
         "Value", 0, ...
-        "ValueChangedFcn", @(src, event) onTChange(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % t1 (tiempo)
     t1Label = uilabel(rightPanel, "Text", "t1 (tiempo)");
@@ -182,7 +181,7 @@ function outerFunction()
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f s", ...
         "Value", 0, ...
-        "ValueChangedFcn", @(src, event) onT1Change(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % t2 (tiempo)
     t2Label = uilabel(rightPanel, "Text", "t2 (tiempo)");
@@ -191,8 +190,8 @@ function outerFunction()
         "Limits", [0 1000000000], ...
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f s", ...
-        "Value", 0, ...
-        "ValueChangedFcn", @(src, event) onT2Change(src, event));
+        "Value", 5, ...
+        "ValueChangedFcn", @(src, event) plotFunction());
     
     % x(t1) (Distancia)
     xt1Label = uilabel(rightPanel, "Text", "x(t1) (Distancia)");
@@ -202,7 +201,7 @@ function outerFunction()
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f ft", ...
         "Value", -0.25, ...
-        "ValueChangedFcn", @(src, event) onXt1Change(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction()); 
     
     % x'(t2) (Distancia)
     xt2Label = uilabel(rightPanel, "Text", "x'(t2) (Distancia)");
@@ -212,7 +211,7 @@ function outerFunction()
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f ft", ...
         "Value", 0, ...
-        "ValueChangedFcn", @(src, event) onXt2Change(src, event));
+        "ValueChangedFcn", @(src, event) plotFunction()); 
 
         solutionAtTLabel = uilabel(rightPanel, "Text", "x(t): ");
 
@@ -286,10 +285,22 @@ function outerFunction()
         plotFunction();
     end
 
+    function onWSquaredChange(src, ~)
+        kValue.Value = massValue.Value * src.Value;
+        wValue.Value = sqrt(src.Value);
+        plotFunction();
+    end
+
+    function onWChange(src, ~)
+        wSquaredValue.Value = src.Value^2;
+        kValue.Value = massValue.Value * wSquaredValue.Value;
+        plotFunction();
+    end
+
     function onXChange(~, ~)
-        kValue.Value = weight.Value / xValue.Value;
-        wSquaredValue.Value = kValue.Value / massValue.Value;
-        wValue.Value = sqrt(wSquaredValue.Value);
+        if ~isequal(kValue.Value, weight.Value / xValue.Value)
+            kValue.Value = weight.Value / xValue.Value;
+        end
         plotFunction();
     end
     
@@ -357,8 +368,8 @@ function outerFunction()
         F0Label.Visible         = 'off';
         F0Value.Visible         = 'off';
         
-        gammaLabel.Visible      = 'off';
-        gammaValue.Visible      = 'off';
+        %gammaLabel.Visible      = 'off';
+        %gammaValue.Visible      = 'off';
 
         alternativeSolutionLabel.Visible = 'off';
     end
@@ -539,82 +550,102 @@ function outerFunction()
     end
 
     function forzedPositions()
-        % Posición de los elementos para movimiento forzado
-        weightLabel.Position = [10, 1020, 150, 22];
+        currentY = 1020; % Posición Y inicial
+        verticalStep = 50; % Espaciado vertical entre elementos
+
+        % Weight (W)
+        weightLabel.Position = [10, currentY, 150, 22];
         weightLabel.Visible = 'on';
-        weight.Position = [10, 1000, 100, 22];
+        weight.Position = [10, currentY-20, 100, 22];
         weight.Visible = 'on';
-        
-        F0Label.Position = [10, 970, 150, 22];
+        currentY = currentY - verticalStep;
+
+        % Spring Constant (K)
+        kLabel.Position = [10, currentY, 150, 22];
+        kLabel.Visible = 'on';
+        kValue.Position = [10, currentY-20, 100, 22];
+        kValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Omega squared (ω²)
+        wSquaredLabel.Position = [10, currentY, 150, 22];
+        wSquaredLabel.Visible = 'on'; % ←¡Habilitar visibilidad!
+        wSquaredValue.Position = [10, currentY-20, 100, 22];
+        wSquaredValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Omega (ω)
+        wLabel.Position = [10, currentY, 150, 22];
+        wLabel.Visible = 'on'; % ←¡Habilitar visibilidad!
+        wValue.Position = [10, currentY-20, 100, 22];
+        wValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % X (Alargamiento)
+        xLabel.Position = [10, currentY, 150, 22];
+        xLabel.Visible = 'on'; % ←¡Habilitar visibilidad!
+        xValue.Position = [10, currentY-20, 100, 22];
+        xValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Mass (m)
+        massLabel.Position = [10, currentY, 150, 22];
+        massLabel.Visible = 'on';
+        massValue.Position = [10, currentY-20, 100, 22];
+        massValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Beta (β)
+        betaLabel.Position = [10, currentY, 150, 22];
+        betaLabel.Visible = 'on';
+        betaValue.Position = [10, currentY-20, 100, 22];
+        betaValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Lambda (λ)
+        lambdaLabel.Position = [10, currentY, 150, 22];
+        lambdaLabel.Visible = 'on';
+        lambdaValue.Position = [10, currentY-20, 100, 22];
+        lambdaValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Fuerza Externa (F0)
+        F0Label.Position = [10, currentY, 150, 22];
         F0Label.Visible = 'on';
-        F0Value.Position = [10, 950, 100, 22];
+        F0Value.Position = [10, currentY-20, 100, 22];
         F0Value.Visible = 'on';
-        
-        gammaLabel.Position = [10, 920, 150, 22];
-        gammaLabel.Visible = 'on';
-        gammaValue.Position = [10, 900, 100, 22];
-        gammaValue.Visible = 'on';   
+        currentY = currentY - verticalStep;
 
-    % Weight
-    weightLabel.Position = [10, 1020, 150, 22];
-    weightLabel.Visible = 'on';
-    weight.Position = [10, 1000, 100, 22];
-    weight.Visible = 'on';
-    
-    % Spring constant
-    kLabel.Position = [10, 970, 150, 22];
-    kLabel.Visible = 'on';
-    kValue.Position = [10, 950, 100, 22];
-    kValue.Visible = 'on';
-    
-    % Omega squared
-    wSquaredLabel.Position = [10, 920, 150, 22];
-    wSquaredLabel.Visible = 'on';
-    wSquaredValue.Position = [10, 900, 100, 22];
-    wSquaredValue.Visible = 'on';
-    
-    % Omega
-    wLabel.Position = [10, 870, 150, 22];
-    wLabel.Visible = 'on';
-    wValue.Position = [10, 850, 100, 22];
-    wValue.Visible = 'on';
-    
-    % Mass
-    massLabel.Position = [10, 820, 150, 22];
-    massLabel.Visible = 'on';
-    massValue.Position = [10, 800, 100, 22];
-    massValue.Visible = 'on';
+        % t1 (tiempo para posición)
+        t1Label.Text = "t1 (Tiempo para x1)";
+        t1Label.Position = [10, currentY, 150, 22];
+        t1Label.Visible = 'on';
+        t1Value.Position = [10, currentY-20, 100, 22];
+        t1Value.Visible = 'on';
+        currentY = currentY - 50;
 
-    % Beta (β)
-    betaLabel.Position = [10, 770, 100, 22];
-    betaLabel.Visible = 'on';
-    betaValue.Position = [10, 750, 100, 22];
-    betaValue.Visible = 'on';
+        % x1(t1)
+        xt1Label.Text = "x1(t1) (Posición)";
+        xt1Label.Position = [10, currentY, 150, 22];
+        xt1Label.Visible = 'on';
+        xt1Value.Position = [10, currentY-20, 100, 22];
+        xt1Value.Visible = 'on';
+        currentY = currentY - 50;
 
-    % Lambda (λ)
-    lambdaLabel.Position = [10, 720, 100, 22];
-    lambdaLabel.Visible = 'on';
-    lambdaValue.Position = [10, 700, 100, 22];
-    lambdaValue.Visible = 'on';
-    
-    % X (Alargamiento)
-    xLabel.Position = [10, 670, 150, 22];
-    xLabel.Visible = 'on';
-    xValue.Position = [10, 650, 100, 22];
-    xValue.Visible = 'on';
-    
-    % ▼▼▼ Campos nuevos para fuerza externa ▼▼▼
-    % F0 (Fuerza externa)
-    F0Label.Position = [10, 620, 150, 22];
-    F0Label.Visible = 'on';
-    F0Value.Position = [10, 600, 100, 22];
-    F0Value.Visible = 'on';
-    
-    % γ (Frecuencia fuerza externa)
-    gammaLabel.Position = [10, 570, 150, 22];
-    gammaLabel.Visible = 'on';
-    gammaValue.Position = [10, 550, 100, 22];
-    gammaValue.Visible = 'on';     
+        % t2 (tiempo para velocidad)
+        t2Label.Text = "t2 (Tiempo para x2')";
+        t2Label.Position = [10, currentY, 150, 22];
+        t2Label.Visible = 'on';
+        t2Value.Position = [10, currentY-20, 100, 22];
+        t2Value.Visible = 'on';
+        currentY = currentY - 50;
+
+        % x2'(t2) (velocidad)
+        xt2Label.Text = "x2'(t2) (Velocidad)";
+        xt2Label.Position = [10, currentY, 150, 22];
+        xt2Label.Visible = 'on';
+        xt2Value.Position = [10, currentY-20, 100, 22];
+        xt2Value.Visible = 'on';
     end
 
 
@@ -709,63 +740,65 @@ function outerFunction()
         % Parámetros del sistema
         m = massValue.Value;
         beta = betaValue.Value;
-        k = kValue.Value;
-        F0 = F0Value.Value;
-        gamma = gammaValue.Value;
-        w = sqrt(k/m); % Frecuencia natural
-        lambda = beta / (2*m);
+        k = kValue.Value; 
+        t1 = t1Value.Value;
+        x1 = xt1Value.Value;
+        t2 = t2Value.Value;
+        x2_prime = xt2Value.Value;
         
-        % Condiciones iniciales (usamos los valores de los campos xValue y xt2Value)
-        x0 = xValue.Value; % Posición inicial (x(0))
-        v0 = xt2Value.Value; % Velocidad inicial (x'(0))
-        
-        % Solución homogénea (transitorio)
-        t = linspace(0, 10, 1000);
-        discriminant = lambda^2 - w^2;
-        
-        if discriminant > 0 % Sobreamortiguado
-            r1 = -lambda + sqrt(discriminant);
-            r2 = -lambda - sqrt(discriminant);
-            % Sistema de ecuaciones para C1 y C2:
-            % x0 = C1 + C2
-            % v0 = r1*C1 + r2*C2
-            A = [1, 1; r1, r2];
-            B = [x0; v0];
-            C = A \ B;
-            C1 = C(1);
-            C2 = C(2);
-            x_h = C1*exp(r1*t) + C2*exp(r2*t);
-            
-        elseif discriminant == 0 % Críticamente amortiguado
-            r = -lambda;
-            % Solución: x_h = (C1 + C2*t)*exp(r*t)
-            % Condiciones iniciales:
-            % x0 = C1
-            % v0 = r*C1 + C2
-            C1 = x0;
-            C2 = v0 - r*C1;
-            x_h = (C1 + C2*t) .* exp(r*t);
-            
-        else % Subamortiguado
-            w_d = sqrt(w^2 - lambda^2);
-            % Solución: x_h = exp(-lambda*t)*(C1*cos(w_d*t) + C2*sin(w_d*t))
-            % Condiciones iniciales:
-            % x0 = C1
-            % v0 = -lambda*C1 + w_d*C2
-            C1 = x0;
-            C2 = (v0 + lambda*C1) / w_d;
-            x_h = exp(-lambda*t) .* (C1*cos(w_d*t) + C2*sin(w_d*t));
+        try
+            F_t = str2func(['@(t)' F0Value.Value]); % Función de fuerza
+        catch
+            errordlg('Error en formato de F(t). Ejemplo válido: 5*cos(3*t)');
+            return;
         end
+
+
+        % Condiciones de frontera
+        t1 = t1Value.Value;
+        x1 = xt1Value.Value;
+        t2 = t2Value.Value;
+        x2_prime = xt2Value.Value;
         
-        % Solución particular (estacionaria)
-        X = F0 / sqrt((k - m*gamma^2)^2 + (beta*gamma)^2);
-        phi = atan2(beta*gamma, k - m*gamma^2);
-        x_p = X * cos(gamma*t - phi);
+    % Caso IVP (t1 == t2)
+    if t1 == t2
+        % Sistema de EDO: x' = f(t, x)
+        ode_fun = @(t, x) [
+            x(2); 
+            (F_t(t) - beta*x(2) - k*x(1))/m 
+        ];
         
-        % Solución total
-        x = x_h + x_p;
+        % Condiciones iniciales [x(t1); x'(t1)]
+        y0 = [x1; x2_prime];
         
-        plot(ax, t, x);
-        title(ax, 'Resortes: Movimiento forzado');
+        % Intervalo de solución (ejemplo: t1 a t1+10)
+        t_span = [t1, t1 + 10];
+        
+        % Resolver IVP
+        [t_sol, x_sol] = ode45(ode_fun, t_span, y0);
+        
+    % Caso BVP (t1 ≠ t2)
+    else
+        % Sistema de EDO y condiciones de frontera
+        ode_system = @(t, x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m];
+        boundary_cond = @(xa, xb) [xa(1) - x1; xb(2) - x2_prime];
+        
+        % Intervalo temporal ordenado
+        t_span = [min(t1, t2), max(t1, t2)];
+        
+        % Guess inicial y solución BVP
+        solution_guess = bvpinit(linspace(t_span(1), t_span(2), 100), [0; 0]);
+        sol = bvp4c(ode_system, boundary_cond, solution_guess);
+        
+        % Evaluar solución
+        t_sol = linspace(t_span(1), t_span(2), 1000);
+        x_sol = deval(sol, t_sol);
+    end
+    
+    % Graficar
+    cla(ax);
+    plot(ax, t_sol, x_sol(1,:));
+    title(ax, 'Solución de la EDO');
+    grid(ax, 'on');
     end
 end
