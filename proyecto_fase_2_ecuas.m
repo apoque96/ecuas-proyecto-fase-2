@@ -150,6 +150,7 @@ function outerFunction()
         "Limits", [0 1000000000], ...
         "LowerLimitInclusive", "on", ...
         "ValueDisplayFormat", "%.2f", ...
+
         "Value", 0.5, ...
         "ValueChangedFcn", @(src, event) plotFunction());
 
@@ -719,22 +720,169 @@ function outerFunction()
         y = constants(1) * cos(wValue.Value * x) + constants(2) * sin(wValue.Value * x);
 
         plot(ax, x, y);
+        title(ax, 'Resortes: Movimiento no amortiguado');
         yline(ax, 0, 'k-', 'LineWidth', 1.5);
     end
 
-    function plotDamped()
-        lambda = lambdaValue.Value / 2;
-        root = lambda.^2 - wSquaredValue.Value;
-
-        if root > 0
-            
-        elseif root == 0
-
-        else
-            
+ function plotDamped()
+    lambda = lambdaValue.Value / 2;
+    root = lambda.^2 - wSquaredValue.Value;
+    
+    if root > 0
+        % Overdamped case: two real distinct roots
+        r1 = -lambda + sqrt(root);
+        r2 = -lambda - sqrt(root);
+        
+        % Solve for the constants of the equation
+        A = [exp(r1 * t1Value.Value), exp(r2 * t1Value.Value); ...
+             r1 * exp(r1 * t2Value.Value), r2 * exp(r2 * t2Value.Value)];
+        B = [xt1Value.Value; xt2Value.Value];
+        constants = A \ B;
+        
+        % Display solution at time t
+        solutionAtTLabel.Text = "x(t) = " + string(constants(1) * exp(r1 * tValue.Value) + ...
+                                constants(2) * exp(r2 * tValue.Value));
+        
+        % Equation solution
+        solutionLabel.Text = "Solución de la ecuación: ";
+        addPlus = false;
+        
+        if constants(1) ~= 0
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(1)) + "e^(" + string(r1) + "t)";
+            addPlus = true;
         end
-
+        
+        if constants(2) ~= 0
+            if addPlus
+                solutionLabel.Text = solutionLabel.Text + " + ";
+            end
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(2)) + "e^(" + string(r2) + "t)";
+        end
+        
+        if constants(1) == 0 && constants(2) == 0
+            solutionLabel.Text = solutionLabel.Text + "0";
+        end
+        
+        % No alternative solution for overdamped case
+        alternativeSolutionLabel.Text = "";
+        
+        % Plot the function
+        x = linspace(0, 100, 10000);
+        y = constants(1) * exp(r1 * x) + constants(2) * exp(r2 * x);
+        plot(ax, x, y);
+        title(ax, 'Resortes: Movimiento sobreamortiguado');
+        yline(ax, 0, 'k-', 'LineWidth', 1.5);
+        
+    elseif root == 0
+        % Critically damped case: repeated real root
+        r = -lambda;
+        
+        % Solve for the constants of the equation
+        A = [exp(r * t1Value.Value), t1Value.Value * exp(r * t1Value.Value); ...
+             r * exp(r * t2Value.Value), ...
+             r * t2Value.Value * exp(r * t2Value.Value) + exp(r * t2Value.Value)];
+        B = [xt1Value.Value; xt2Value.Value];
+        constants = A \ B;
+        
+        % Display solution at time t
+        solutionAtTLabel.Text = "x(t) = " + string(constants(1) * exp(r * tValue.Value) + ...
+                               constants(2) * tValue.Value * exp(r * tValue.Value));
+        
+        % Equation solution
+        solutionLabel.Text = "Solución de la ecuación: ";
+        addPlus = false;
+        
+        if constants(1) ~= 0
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(1)) + "e^(" + string(r) + "t)";
+            addPlus = true;
+        end
+        
+        if constants(2) ~= 0
+            if addPlus
+                solutionLabel.Text = solutionLabel.Text + " + ";
+            end
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(2)) + "t·e^(" + string(r) + "t)";
+        end
+        
+        if constants(1) == 0 && constants(2) == 0
+            solutionLabel.Text = solutionLabel.Text + "0";
+        end
+        
+        % No alternative solution for critically damped case
+        alternativeSolutionLabel.Text = "";
+        
+        % Plot the function
+        x = linspace(0, 100, 10000);
+        y = constants(1) * exp(r * x) + constants(2) * x .* exp(r * x);
+        plot(ax, x, y);
+        title(ax, 'Resortes: Movimiento críticamente amortiguado');
+        yline(ax, 0, 'k-', 'LineWidth', 1.5);
+        
+    else
+        % Underdamped case: complex conjugate roots
+        w_d = sqrt(-root);  % Damped natural frequency
+        
+        % Solve for the constants of the equation
+        A = [exp(-lambda * t1Value.Value) * cos(w_d * t1Value.Value), ...
+             exp(-lambda * t1Value.Value) * sin(w_d * t1Value.Value); ...
+             ((-lambda) * exp(-lambda * t2Value.Value) * cos(w_d * t2Value.Value) - exp(-lambda * t2Value.Value) * w_d * sin(w_d * t2Value.Value)), ...
+             (-lambda) * exp(-lambda * t2Value.Value) * sin(w_d * t2Value.Value) + exp(-lambda * t2Value.Value) * w_d * cos(w_d * t2Value.Value)]
+        B = [xt1Value.Value; xt2Value.Value];
+        constants = A \ B;
+        
+        % Display solution at time t
+        solutionAtTLabel.Text = "x(t) = " + ...
+            string(exp(-lambda * tValue.Value) * (constants(1) * cos(w_d * tValue.Value) + ...
+            constants(2) * sin(w_d * tValue.Value)));
+        
+        % Equation solution
+        solutionLabel.Text = "Solución de la ecuación: e^(-" + string(lambda) + "t)·(";
+        addPlus = false;
+        
+        if constants(1) ~= 0
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(1)) + "cos(" + string(w_d) + "t)";
+            addPlus = true;
+        end
+        
+        if constants(2) ~= 0
+            if addPlus
+                solutionLabel.Text = solutionLabel.Text + " + ";
+            end
+            solutionLabel.Text = solutionLabel.Text + ...
+                string(constants(2)) + "sin(" + string(w_d) + "t)";
+        end
+        
+        if constants(1) == 0 && constants(2) == 0
+            solutionLabel.Text = solutionLabel.Text + "0";
+        end
+        
+        solutionLabel.Text = solutionLabel.Text + ")";
+        
+        % Alternative solution using amplitude and phase
+        if constants(1) ~= 0 || constants(2) ~= 0
+            A = sqrt(constants(1)^2 + constants(2)^2);
+            phi = atan2(constants(2), constants(1));
+            
+            alternativeSolutionLabel.Text = "Forma alternativa de la ecuación: " + ...
+                string(A) + "e^(-" + string(lambda) + "t)·sin(" + ...
+                string(w_d) + "t + " + string(phi) + ")";
+        else
+            alternativeSolutionLabel.Text = "";
+        end
+        
+        % Plot the function
+        x = linspace(0, 100, 10000);
+        y = exp(-lambda * x) .* (constants(1) * cos(w_d * x) + constants(2) * sin(w_d * x));
+        plot(ax, x, y);
+        title(ax, 'Resortes: Movimiento subamortiguado');
+        yline(ax, 0, 'k-', 'LineWidth', 1.5);
     end
+end
 
     function plotForzed()
         % Parámetros del sistema
@@ -776,7 +924,7 @@ function outerFunction()
         
         % Resolver IVP
         [t_sol, x_sol] = ode45(ode_fun, t_span, y0);
-        
+
     % Caso BVP (t1 ≠ t2)
     else
         % Sistema de EDO y condiciones de frontera
