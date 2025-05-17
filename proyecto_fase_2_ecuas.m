@@ -1,3 +1,4 @@
+%% 
 function outerFunction()
     application = 0;
 
@@ -737,68 +738,151 @@ function outerFunction()
     end
 
     function plotForzed()
-        % Parámetros del sistema
-        m = massValue.Value;
-        beta = betaValue.Value;
-        k = kValue.Value; 
-        t1 = t1Value.Value;
-        x1 = xt1Value.Value;
-        t2 = t2Value.Value;
-        x2_prime = xt2Value.Value;
+    % --- Obtener parámetros de la interfaz ---
+    m = massValue.Value;
+    beta = betaValue.Value;
+    k = kValue.Value;
+    t1 = t1Value.Value;
+    x1 = xt1Value.Value;
+    t2 = t2Value.Value;
+    x2_prime = xt2Value.Value;
+    F_t_str = F0Value.Value;
+    current_time = tValue.Value;
+
+    % --- Inicializar variables ---
+    yc = ''; % Forma simbólica de yc
+    yp = '[Solución Particular]'; % Valor por defecto para yp
+    C1 = nan;
+    C2 = nan;
+    t_sol = [];
+    x_pos = [];
+    current_position = 0;
+
+    % --- Calcular solución homogénea simbólica (yc) ---
+    lambda = beta / (2*m);
+    omega_0 = sqrt(k/m);
+    
+    if lambda < omega_0
+        omega_d = sqrt(omega_0^2 - lambda^2);
+        yc = sprintf('e^{-%.2ft}(C₁cos(%.2ft) + C₂sin(%.2ft))', lambda, omega_d);
+    elseif lambda > omega_0
+        r1 = -lambda + sqrt(lambda^2 - omega_0^2);
+        r2 = -lambda - sqrt(lambda^2 - omega_0^2);
+        yc = sprintf('C₁e^{%.2ft} + C₂e^{%.2ft}', r1, r2);
+    else
+        yc = sprintf('(C₁ + C₂t)e^{-%.2ft}', lambda);
+    end
+
+    % --- Calcular solución particular (yp) ---
+    try
+        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens');
+        if ~isempty(tokens)
+            F0 = str2double(tokens{1}{1});
+            func_type = tokens{1}{2};
+            gamma = str2double(tokens{1}{3});
+            
+            switch func_type
+                case {'cos', 'sin'}
+                    X = F0 / sqrt((k - m*gamma^2)^2 + (beta*gamma)^2);
+                    phi = atan2(beta*gamma, k - m*gamma^2);
+                    yp = sprintf('%.2f%s(%.2ft - %.2f)', X, func_type, gamma, phi);
+                case 'exp'
+                    yp = sprintf('%.2fe^{%.2ft}', F0, gamma);
+                otherwise
+                    yp = F_t_str;
+            end
+        end
+    catch
+        % Mantener el valor por defecto de yp
+    end
+
+    % --- Resolver numéricamente y calcular C₁/C₂ ---
+    try
+        F_t = str2func(['@(t)' F_t_str]);
         
-        try
-            F_t = str2func(['@(t)' F0Value.Value]); % Función de fuerza
-        catch
-            errordlg('Error en formato de F(t). Ejemplo válido: 5*cos(3*t)');
-            return;
+        if t1 == t2 % IVP (ode45)
+            [t_sol, x_sol] = ode45(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m], [t1, t1+10], [x1; x2_prime]);
+            x_pos = x_sol(:, 1); % Columna 1: posición
+            t_sol = t_sol(:); % Vector columna
+            
+            % Extraer condiciones para yc
+            yc_t1 = x_sol(1, 1);
+            yc_prime_t1 = x_sol(1, 2);
+            
+        else % BVP (bvp4c)
+            sol = bvp4c(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m], ...
+                        @(xa,xb) [xa(1)-x1; xb(2)-x2_prime], ...
+                        bvpinit(linspace(min(t1,t2), max(t1,t2), 100), [0; 0]));
+            t_sol = linspace(min(t1,t2), max(t1,t2), 1000);
+            x_sol = deval(sol, t_sol);
+            x_pos = x_sol(1, :)'; % Fila 1: posición, convertida a columna
+            t_sol = t_sol(:); % Vector columna
+            
+            % Extraer condiciones para yc
+            yc_t1 = x_sol(1, 1);
+            yc_prime_t1 = x_sol(2, 1);
         end
 
+        % --- Calcular C₁ y C₂ ---
+        if lambda < omega_0 % Subamortiguado
+            omega_d = sqrt(omega_0^2 - lambda^2);
+            A = [exp(-lambda*t1)*cos(omega_d*t1), exp(-lambda*t1)*sin(omega_d*t1);
+                 exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1)), ...
+                 exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1))];
+            B = [yc_t1; yc_prime_t1];
+            constants = A \ B;
+            C1 = constants(1);
+            C2 = constants(2);
+            yc = sprintf('e^{-%.2ft}(%.2fcos(%.2ft) + %.2fsin(%.2ft))', lambda, C1, omega_d, C2, omega_d);
+            
+        elseif lambda > omega_0 % Sobreamortiguado
+            r1 = -lambda + sqrt(lambda^2 - omega_0^2);
+            r2 = -lambda - sqrt(lambda^2 - omega_0^2);
+            A = [exp(r1*t1), exp(r2*t1);
+                 r1*exp(r1*t1), r2*exp(r2*t1)];
+            B = [yc_t1; yc_prime_t1];
+            constants = A \ B;
+            C1 = constants(1);
+            C2 = constants(2);
+            yc = sprintf('%.2fe^{%.2ft} + %.2fe^{%.2ft}', C1, r1, C2, r2);
+            
+        else % Críticamente amortiguado
+            A = [exp(-lambda*t1), t1*exp(-lambda*t1);
+                 -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
+            B = [yc_t1; yc_prime_t1];
+            constants = A \ B;
+            C1 = constants(1);
+            C2 = constants(2);
+            yc = sprintf('(%.2f + %.2ft)e^{-%.2ft}', C1, C2, lambda);
+        end
+        
+    catch ME
+        errordlg(['Error: ' ME.message]);
+    end
 
-        % Condiciones de frontera
-        t1 = t1Value.Value;
-        x1 = xt1Value.Value;
-        t2 = t2Value.Value;
-        x2_prime = xt2Value.Value;
-        
-    % Caso IVP (t1 == t2)
-    if t1 == t2
-        % Sistema de EDO: x' = f(t, x)
-        ode_fun = @(t, x) [
-            x(2); 
-            (F_t(t) - beta*x(2) - k*x(1))/m 
-        ];
-        
-        % Condiciones iniciales [x(t1); x'(t1)]
-        y0 = [x1; x2_prime];
-        
-        % Intervalo de solución (ejemplo: t1 a t1+10)
-        t_span = [t1, t1 + 10];
-        
-        % Resolver IVP
-        [t_sol, x_sol] = ode45(ode_fun, t_span, y0);
-        
-    % Caso BVP (t1 ≠ t2)
-    else
-        % Sistema de EDO y condiciones de frontera
-        ode_system = @(t, x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m];
-        boundary_cond = @(xa, xb) [xa(1) - x1; xb(2) - x2_prime];
-        
-        % Intervalo temporal ordenado
-        t_span = [min(t1, t2), max(t1, t2)];
-        
-        % Guess inicial y solución BVP
-        solution_guess = bvpinit(linspace(t_span(1), t_span(2), 100), [0; 0]);
-        sol = bvp4c(ode_system, boundary_cond, solution_guess);
-        
-        % Evaluar solución
-        t_sol = linspace(t_span(1), t_span(2), 1000);
-        x_sol = deval(sol, t_sol);
+    % --- Manejar índices y actualizar etiquetas ---
+    if ~isempty(t_sol)
+        current_index = find(t_sol >= current_time, 1);
+        if isempty(current_index)
+            current_index = numel(t_sol);
+        end
+        current_position = x_pos(current_index);
     end
     
-    % Graficar
+    solutionLabel.Text = sprintf('Solución: y(t) = %s + %s', yc, yp);
+    solutionAtTLabel.Text = sprintf('x(%.2f s) = %.4f ft', current_time, current_position);
+
+    % --- Graficar ---
     cla(ax);
-    plot(ax, t_sol, x_sol(1,:));
-    title(ax, 'Solución de la EDO');
-    grid(ax, 'on');
+    if ~isempty(t_sol) && ~isempty(x_pos)
+        plot(ax, t_sol, x_pos, 'b-', 'LineWidth', 1.5);
+        title(ax, 'Movimiento Forzado');
+        xlabel(ax, 'Tiempo (s)');
+        ylabel(ax, 'Desplazamiento (ft)');
+        grid(ax, 'on');
+        
+        ax.XLim = [min(t_sol) max(t_sol)];  % Ajusta eje X al rango simulado
+        ax.YLim = [min(x_pos)-0.5 max(x_pos)+0.5];  % Margen en Y
+    end
     end
 end
