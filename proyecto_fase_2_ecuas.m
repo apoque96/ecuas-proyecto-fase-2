@@ -16,7 +16,7 @@ function outerFunction()
     % Initialize the radio buttons
     bg = uibuttongroup(leftPanel, "BackgroundColor", "#f0f1ff", ...
         "BorderColor", "#f0f1ff", ...
-        "Position", [10, 0, 250, 100], ...
+        "Position", [10, 0, 250, 120], ...
     "SelectionChangedFcn", @(bg, event) onSelectionChanged(event));
 
     % Define the callback function
@@ -29,26 +29,32 @@ function outerFunction()
                 application = 1;
             case "Resortes: Movimiento forzado"
                 application = 2;
-            case "Circuito en serie análogo"
+            case "Circuito en serie análogo: carga"
                 application = 3;
+            case "Circuito en serie análogo: corriente"
+                application = 4;
         end
         positions();
     end
 
     btnUndamped = uiradiobutton(bg, "Value", 1, ...
         "Text", "Resortes: Movimiento libre no amortiguado", ...
-        "Position", [0, 66, 250, 20]);
+        "Position", [0, 88, 250, 20]);
     
     btnDamped = uiradiobutton(bg, "Value", 0, ...
         "Text", "Resortes: Movimiento libre amortiguado", ...
-        "Position", [0, 44, 250, 20]);
+        "Position", [0, 66, 250, 20]);
     
     btnForzed = uiradiobutton(bg, "Value", 0, ...
         "Text", "Resortes: Movimiento forzado", ...
-        "Position", [0, 22, 250, 20]);
+        "Position", [0, 44, 250, 20]);
     
-    btnCircuit = uiradiobutton(bg, "Value", 0, ...
-        "Text", "Circuito en serie análogo", ...
+    btnCircuitCharge = uiradiobutton(bg, "Value", 0, ...
+        "Text", "Circuito en serie análogo: carga", ...
+        "Position", [0, 22, 250, 20]);
+
+    btnCircuitCurrent = uiradiobutton(bg, "Value", 0, ...
+        "Text", "Circuito en serie análogo: corriente", ...
         "Position", [0, 0, 250, 20]);
     
     % Right panel
@@ -134,16 +140,6 @@ function outerFunction()
         "Value", "10*cos(5*t)", ... 
         "ValueChangedFcn", @(src, event) plotFunction());
 
-    % Y (Frecuencia fuerza externa)
-    gammaLabel = uilabel(rightPanel, "Text", "γ (Frecuencia)");
-    
-    gammaValue = uieditfield(rightPanel, "numeric", ...
-        "Limits", [0 1000000000], ...
-        "LowerLimitInclusive", "on", ...
-        "ValueDisplayFormat", "%.2f rad/s", ...
-        "Value", 5, ...
-        "ValueChangedFcn", @(src, event) plotFunction());
-
     % 2λ
     lambdaLabel = uilabel(rightPanel, "Text", "2λ");
     
@@ -214,10 +210,50 @@ function outerFunction()
         "Value", 0, ...
         "ValueChangedFcn", @(src, event) plotFunction()); 
 
+    % L (Inductancia)
+    lLabel = uilabel(rightPanel, "Text", "L (Inductancia)");
+    
+    lValue = uieditfield(rightPanel, "numeric", ...
+        "Limits", [0 1000000000], ...
+        "LowerLimitInclusive", "off", ...
+        "ValueDisplayFormat", "%.2f H", ...
+        "Value", 1, ...
+        "ValueChangedFcn", @(src, event) plotFunction()); 
+
+    % R (Resistencia)
+    rLabel = uilabel(rightPanel, "Text", "R (Resistencia)");
+    
+    rValue = uieditfield(rightPanel, "numeric", ...
+        "Limits", [0 1000000000], ...
+        "LowerLimitInclusive", "off", ...
+        "ValueDisplayFormat", "%.2f Ω", ...
+        "Value", 2, ...
+        "ValueChangedFcn", @(src, event) plotFunction()); 
+
+    % C (Capacitancia)
+    cLabel = uilabel(rightPanel, "Text", "C (Capacitancia)");
+    
+    cValue = uieditfield(rightPanel, "numeric", ...
+        "Limits", [0 1000000000], ...
+        "LowerLimitInclusive", "off", ...
+        "ValueDisplayFormat", "%.2f F", ...
+        "Value", 0.25, ...
+        "ValueChangedFcn", @(src, event) plotFunction()); 
+
+    qLabel = uilabel(rightPanel, "Text", "q(t)");
+    qValue = uieditfield(rightPanel, "text", ...
+        "Value", "-5*sin(1*t)", ... 
+        "ValueChangedFcn", @(src, event) plotFunction());
+
+    iLabel = uilabel(rightPanel, "Text", "I(t)");
+    iValue = uieditfield(rightPanel, "text", ...
+        "Value", "-5*sin(1*t)", ... 
+        "ValueChangedFcn", @(src, event) plotFunction());
+
         solutionAtTLabel = uilabel(rightPanel, "Text", "x(t): ");
 
         % Equation solution
-        solutionLabel = uilabel(rightPanel, "Text", "Solución de la ecuación: ");
+        solutionLabel = uilabel(rightPanel, "Text", "Solución de la ecuación: ", "WordWrap","on");
     
         % Alternative solution
         alternativeSolutionLabel = uilabel(rightPanel, "Text", "Forma alternativa de la ecuación: ");
@@ -350,27 +386,32 @@ function outerFunction()
         
         xLabel.Visible          = 'off';
         xValue.Visible          = 'off';
-        
-        tLabel.Visible          = 'off';
-        tValue.Visible          = 'off';
-        
-        t1Label.Visible         = 'off';
-        t1Value.Visible         = 'off';
-        
-        t2Label.Visible         = 'off';
-        t2Value.Visible         = 'off';
-        
-        xt1Label.Visible        = 'off';
-        xt1Value.Visible        = 'off';
-        
-        xt2Label.Visible        = 'off';
-        xt2Value.Visible        = 'off';
 
         F0Label.Visible         = 'off';
         F0Value.Visible         = 'off';
         
         %gammaLabel.Visible      = 'off';
         %gammaValue.Visible      = 'off';
+
+        lLabel.Visible          = 'off';
+        lValue.Visible          = 'off';
+
+        rLabel.Visible          = 'off';
+        rValue.Visible          = 'off';
+
+        cLabel.Visible          = 'off';
+        cValue.Visible          = 'off';
+
+        qLabel.Visible          = 'off';
+        qValue.Visible          = 'off';
+
+        iLabel.Visible          = 'off';
+        iValue.Visible          = 'off';
+
+        t1Label.Text = "t1 (Tiempo para x1)";
+        xt1Label.Text = "x1(t1) (Posición)";
+        t2Label.Text = "t2 (Tiempo para x2')";
+        xt2Label.Text = "x2'(t2) (Velocidad)";
 
         alternativeSolutionLabel.Visible = 'off';
     end
@@ -389,6 +430,10 @@ function outerFunction()
                 dampedPositions();
             case 2
                 forzedPositions();
+            case 3
+                chargePositions();
+            case 4
+                currentPositions();
         end
     end
 
@@ -431,33 +476,23 @@ function outerFunction()
     
         % Time
         tLabel.Position = [10, 620, 150, 22];
-        tLabel.Visible = 'on';
         tValue.Position = [10, 600, 100, 22];
-        tValue.Visible = 'on';
     
         % t1
         t1Label.Position = [10, 570, 150, 22];
-        t1Label.Visible = 'on';
         t1Value.Position = [10, 550, 100, 22];
-        t1Value.Visible = 'on';
     
         % t2
         t2Label.Position = [10, 520, 150, 22];
-        t2Label.Visible = 'on';
         t2Value.Position = [10, 500, 100, 22];
-        t2Value.Visible = 'on';
     
         % xt1
         xt1Label.Position = [10, 470, 150, 22];
-        xt1Label.Visible = 'on';
         xt1Value.Position = [10, 450, 100, 22];
-        xt1Value.Visible = 'on';
     
         % xt2
         xt2Label.Position = [10, 420, 150, 22];
-        xt2Label.Visible = 'on';
         xt2Value.Position = [10, 400, 100, 22];
-        xt2Value.Visible = 'on';
         
         % Solution
         solutionAtTLabel.Position = [10, 370, 500, 22];
@@ -517,33 +552,23 @@ function outerFunction()
     
         % Time
         tLabel.Position = [10, 620, 150, 22];
-        tLabel.Visible = 'on';
         tValue.Position = [10, 600, 100, 22];
-        tValue.Visible = 'on';
     
         % t1
         t1Label.Position = [10, 570, 150, 22];
-        t1Label.Visible = 'on';
         t1Value.Position = [10, 550, 100, 22];
-        t1Value.Visible = 'on';
     
         % t2
         t2Label.Position = [10, 520, 150, 22];
-        t2Label.Visible = 'on';
         t2Value.Position = [10, 500, 100, 22];
-        t2Value.Visible = 'on';
     
         % xt1
         xt1Label.Position = [10, 470, 150, 22];
-        xt1Label.Visible = 'on';
         xt1Value.Position = [10, 450, 100, 22];
-        xt1Value.Visible = 'on';
     
         % xt2
         xt2Label.Position = [10, 420, 150, 22];
-        xt2Label.Visible = 'on';
         xt2Value.Position = [10, 400, 100, 22];
-        xt2Value.Visible = 'on';
         
         % Solution
         solutionAtTLabel.Position = [10, 370, 500, 22];
@@ -551,7 +576,7 @@ function outerFunction()
     end
 
     function forzedPositions()
-        currentY = 1020; % Posición Y inicial
+        currentY = 1070; % Posición Y inicial
         verticalStep = 50; % Espaciado vertical entre elementos
 
         % Weight (W)
@@ -617,36 +642,167 @@ function outerFunction()
         F0Value.Visible = 'on';
         currentY = currentY - verticalStep;
 
+        % Time
+        tLabel.Position = [10, currentY, 150, 22];
+        tValue.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - 50;
+
         % t1 (tiempo para posición)
         t1Label.Text = "t1 (Tiempo para x1)";
         t1Label.Position = [10, currentY, 150, 22];
-        t1Label.Visible = 'on';
         t1Value.Position = [10, currentY-20, 100, 22];
-        t1Value.Visible = 'on';
         currentY = currentY - 50;
 
         % x1(t1)
         xt1Label.Text = "x1(t1) (Posición)";
         xt1Label.Position = [10, currentY, 150, 22];
-        xt1Label.Visible = 'on';
         xt1Value.Position = [10, currentY-20, 100, 22];
-        xt1Value.Visible = 'on';
         currentY = currentY - 50;
 
         % t2 (tiempo para velocidad)
         t2Label.Text = "t2 (Tiempo para x2')";
         t2Label.Position = [10, currentY, 150, 22];
-        t2Label.Visible = 'on';
         t2Value.Position = [10, currentY-20, 100, 22];
-        t2Value.Visible = 'on';
         currentY = currentY - 50;
 
         % x2'(t2) (velocidad)
         xt2Label.Text = "x2'(t2) (Velocidad)";
         xt2Label.Position = [10, currentY, 150, 22];
-        xt2Label.Visible = 'on';
         xt2Value.Position = [10, currentY-20, 100, 22];
-        xt2Value.Visible = 'on';
+        currentY = currentY - 50;
+
+        solutionAtTLabel.Position = [10, currentY, 500, 22];
+        solutionLabel.Position = [10, currentY-20, 500, 22];
+    end
+
+    function chargePositions()
+        currentY = 820; % Posición Y inicial
+        verticalStep = 50; % Espaciado vertical entre elementos
+
+        % L
+        lLabel.Position = [10, currentY, 150, 22];
+        lLabel.Visible = 'on';
+        lValue.Position = [10, currentY-20, 100, 22];
+        lValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % R
+        rLabel.Position = [10, currentY, 150, 22];
+        rLabel.Visible = 'on';
+        rValue.Position = [10, currentY-20, 100, 22];
+        rValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % C
+        cLabel.Position = [10, currentY, 150, 22];
+        cLabel.Visible = 'on';
+        cValue.Position = [10, currentY-20, 100, 22];
+        cValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % q(t)
+        qLabel.Position = [10, currentY, 150, 22];
+        qLabel.Visible = 'on';
+        qValue.Position = [10, currentY-20, 100, 22];
+        qValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Time
+        tLabel.Position = [10, currentY, 150, 22];
+        tValue.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - 50;
+
+        % t1 (tiempo para carga)
+        t1Label.Text = "t1 (Tiempo para q)";
+        t1Label.Position = [10, currentY, 150, 22];
+        t1Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % q(t1)
+        xt1Label.Text = "q(t1) (Carga)";
+        xt1Label.Position = [10, currentY, 150, 22];
+        xt1Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % t2 (tiempo para corriente)
+        t2Label.Text = "t2 (Tiempo para I)";
+        t2Label.Position = [10, currentY, 150, 22];
+        t2Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % I(t2) (Corriente)
+        xt2Label.Text = "I(t2) (Corriente)";
+        xt2Label.Position = [10, currentY, 150, 22];
+        xt2Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - 50;
+
+        solutionAtTLabel.Position = [10, currentY, 800, 22];
+        solutionLabel.Position = [10, currentY-20, 800, 22];
+    end
+
+    function currentPositions()
+        currentY = 820; % Posición Y inicial
+        verticalStep = 50; % Espaciado vertical entre elementos
+
+        % L
+        lLabel.Position = [10, currentY, 150, 22];
+        lLabel.Visible = 'on';
+        lValue.Position = [10, currentY-20, 100, 22];
+        lValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % R
+        rLabel.Position = [10, currentY, 150, 22];
+        rLabel.Visible = 'on';
+        rValue.Position = [10, currentY-20, 100, 22];
+        rValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % C
+        cLabel.Position = [10, currentY, 150, 22];
+        cLabel.Visible = 'on';
+        cValue.Position = [10, currentY-20, 100, 22];
+        cValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % I(t)
+        iLabel.Position = [10, currentY, 150, 22];
+        iLabel.Visible = 'on';
+        iValue.Position = [10, currentY-20, 100, 22];
+        iValue.Visible = 'on';
+        currentY = currentY - verticalStep;
+
+        % Time
+        tLabel.Position = [10, currentY, 150, 22];
+        tValue.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - 50;
+
+        % t1 (tiempo para carga)
+        t1Label.Text = "t1 (Tiempo para I)";
+        t1Label.Position = [10, currentY, 150, 22];
+        t1Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % q(t1)
+        xt1Label.Text = "I(t1) (Corriente)";
+        xt1Label.Position = [10, currentY, 150, 22];
+        xt1Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % t2 (tiempo para derivada)
+        t2Label.Text = "t2 (Tiempo para I')";
+        t2Label.Position = [10, currentY, 150, 22];
+        t2Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - verticalStep;
+
+        % I(t2) (Corriente)
+        xt2Label.Text = "I'(t2)";
+        xt2Label.Position = [10, currentY, 150, 22];
+        xt2Value.Position = [10, currentY-20, 100, 22];
+        currentY = currentY - 50;
+
+        solutionAtTLabel.Position = [10, currentY, 800, 22];
+        solutionLabel.Position = [10, currentY-20, 800, 22];
     end
 
 
@@ -658,6 +814,10 @@ function outerFunction()
                 plotDamped();
             case 2
                 plotForzed();
+            case 3
+                plotCharge();
+            case 4
+                plotCurrent();
         end
     end
 
@@ -885,15 +1045,35 @@ function outerFunction()
 end
 
     function plotForzed()
-    % --- Obtener parámetros de la interfaz ---
-    m = massValue.Value;
-    beta = betaValue.Value;
-    k = kValue.Value;
+        m = massValue.Value;
+        beta = betaValue.Value;
+        k = kValue.Value;
+        F_t_str = F0Value.Value;
+        plotNoHomogeneus(m, beta, k, F_t_str, "Movimiento forzado", "x (Desplazamiento)")
+    end
+
+    function plotCharge()
+        m = lValue.Value;
+        beta = rValue.Value;
+        k = 1 / cValue.Value;
+        F_t_str = qValue.Value;
+        plotNoHomogeneus(m, beta, k, F_t_str, "Circuito análogo en serie", "q (Carga)")
+    end
+
+    function plotCurrent()
+        m = lValue.Value;
+        beta = rValue.Value;
+        k = 1 / cValue.Value;
+        F_t_str = iValue.Value;
+        plotNoHomogeneus(m, beta, k, F_t_str, "Circuito análogo en serie", "I (Corriente)")
+    end
+
+    function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
+        % --- Obtener parámetros de la interfaz ---
     t1 = t1Value.Value;
     x1 = xt1Value.Value;
     t2 = t2Value.Value;
     x2_prime = xt2Value.Value;
-    F_t_str = F0Value.Value;
     current_time = tValue.Value;
 
     % --- Inicializar variables ---
@@ -922,7 +1102,7 @@ end
 
     % --- Calcular solución particular (yp) ---
     try
-        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens');
+        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens')
         if ~isempty(tokens)
             F0 = str2double(tokens{1}{1});
             func_type = tokens{1}{2};
@@ -974,8 +1154,8 @@ end
         if lambda < omega_0 % Subamortiguado
             omega_d = sqrt(omega_0^2 - lambda^2);
             A = [exp(-lambda*t1)*cos(omega_d*t1), exp(-lambda*t1)*sin(omega_d*t1);
-                 exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1)), ...
-                 exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1))];
+                 exp(-lambda*t2)*(-lambda*cos(omega_d*t2) - exp(-lambda*t2)*omega_d*sin(omega_d*t2)), ...
+                 exp(-lambda*t2)*(-lambda*sin(omega_d*t2) + exp(-lambda*t2)*omega_d*cos(omega_d*t2))];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
@@ -986,7 +1166,7 @@ end
             r1 = -lambda + sqrt(lambda^2 - omega_0^2);
             r2 = -lambda - sqrt(lambda^2 - omega_0^2);
             A = [exp(r1*t1), exp(r2*t1);
-                 r1*exp(r1*t1), r2*exp(r2*t1)];
+                 r1*exp(r1*t2), r2*exp(r2*t2)];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
@@ -995,7 +1175,7 @@ end
             
         else % Críticamente amortiguado
             A = [exp(-lambda*t1), t1*exp(-lambda*t1);
-                 -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
+                 -lambda*exp(-lambda*t2), exp(-lambda*t2)*(1 - lambda*t2)];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
@@ -1023,9 +1203,9 @@ end
     cla(ax);
     if ~isempty(t_sol) && ~isempty(x_pos)
         plot(ax, t_sol, x_pos, 'b-', 'LineWidth', 1.5);
-        title(ax, 'Movimiento Forzado');
+        title(ax, plotTitle);
         xlabel(ax, 'Tiempo (s)');
-        ylabel(ax, 'Desplazamiento (ft)');
+        ylabel(ax, yAxisTitle);
         grid(ax, 'on');
         
         ax.XLim = [min(t_sol) max(t_sol)];  % Ajusta eje X al rango simulado
