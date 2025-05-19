@@ -1068,8 +1068,8 @@ end
         plotNoHomogeneus(m, beta, k, F_t_str, "Circuito análogo en serie", "I (Corriente)")
     end
 
-    function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
-        % --- Obtener parámetros de la interfaz ---
+function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
+    % --- Obtener parámetros de la interfaz ---
     t1 = t1Value.Value;
     x1 = xt1Value.Value;
     t2 = t2Value.Value;
@@ -1077,15 +1077,15 @@ end
     current_time = tValue.Value;
 
     % --- Inicializar variables ---
-    yc = ''; % Forma simbólica de yc
-    yp = '[Solución Particular]'; % Valor por defecto para yp
+    yc = ''; 
+    yp = '[Solución Particular]'; 
     C1 = nan;
     C2 = nan;
     t_sol = [];
     x_pos = [];
     current_position = 0;
 
-    % --- Calcular solución homogénea simbólica (yc) ---
+    % --- Calcular solución homogénea (yc) ---
     lambda = beta / (2*m);
     omega_0 = sqrt(k/m);
     
@@ -1102,7 +1102,7 @@ end
 
     % --- Calcular solución particular (yp) ---
     try
-        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens')
+        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens');
         if ~isempty(tokens)
             F0 = str2double(tokens{1}{1});
             func_type = tokens{1}{2};
@@ -1120,74 +1120,80 @@ end
             end
         end
     catch
-        % Mantener el valor por defecto de yp
+        % Mantener valor por defecto si hay error
     end
 
-    % --- Resolver numéricamente y calcular C₁/C₂ ---
+    % --- Resolver numéricamente ---
     try
         F_t = str2func(['@(t)' F_t_str]);
         
         if t1 == t2 % IVP (ode45)
-            [t_sol, x_sol] = ode45(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m], [t1, t1+10], [x1; x2_prime]);
-            x_pos = x_sol(:, 1); % Columna 1: posición
-            t_sol = t_sol(:); % Vector columna
-            
-            % Extraer condiciones para yc
-            yc_t1 = x_sol(1, 1);
-            yc_prime_t1 = x_sol(1, 2);
-            
+            [t_sol, x_sol] = ode45(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m],...
+                                  [t1, t1+10], [x1; x2_prime]);
+            x_pos = x_sol(:, 1);
+            y_t1 = x_sol(1, 1);
+            y_prime_t1 = x_sol(1, 2);
         else % BVP (bvp4c)
-            sol = bvp4c(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m], ...
-                        @(xa,xb) [xa(1)-x1; xb(2)-x2_prime], ...
-                        bvpinit(linspace(min(t1,t2), max(t1,t2), 100), [0; 0]));
+            sol = bvp4c(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m],...
+                       @(xa,xb) [xa(1)-x1; xb(2)-x2_prime],...
+                       bvpinit(linspace(min(t1,t2), max(t1,t2), 100), [0; 0]));
             t_sol = linspace(min(t1,t2), max(t1,t2), 1000);
             x_sol = deval(sol, t_sol);
-            x_pos = x_sol(1, :)'; % Fila 1: posición, convertida a columna
-            t_sol = t_sol(:); % Vector columna
-            
-            % Extraer condiciones para yc
-            yc_t1 = x_sol(1, 1);
-            yc_prime_t1 = x_sol(2, 1);
+            x_pos = x_sol(1, :)';
+            y_t1 = x_sol(1, 1);
+            y_prime_t1 = x_sol(2, 1);
         end
 
-        % --- Calcular C₁ y C₂ ---
+        % --- Calcular yp(t1) y yp'(t1) NUMÉRICAMENTE ---
+        try
+            yp_func = str2func(['@(t) ' strrep(yp, 't', 't')]);
+            yp_t1 = yp_func(t1);
+            h = 1e-5; % Paso para derivada numérica
+            yp_prime_t1 = (yp_func(t1 + h) - yp_func(t1)) / h;
+        catch
+            yp_t1 = 0;
+            yp_prime_t1 = 0;
+        end
+
+        % --- Ajustar condiciones para yc ---
+        yc_t1 = y_t1 - yp_t1;
+        yc_prime_t1 = y_prime_t1 - yp_prime_t1;
+
+        % --- Calcular C1 y C2 ---
         if lambda < omega_0 % Subamortiguado
             omega_d = sqrt(omega_0^2 - lambda^2);
             A = [exp(-lambda*t1)*cos(omega_d*t1), exp(-lambda*t1)*sin(omega_d*t1);
-                 exp(-lambda*t2)*(-lambda*cos(omega_d*t2) - exp(-lambda*t2)*omega_d*sin(omega_d*t2)), ...
-                 exp(-lambda*t2)*(-lambda*sin(omega_d*t2) + exp(-lambda*t2)*omega_d*cos(omega_d*t2))];
+                 exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1)),...
+                 exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1))];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
             C2 = constants(2);
-            yc = sprintf('e^{-%.2ft}(%.2fcos(%.2ft) + %.2fsin(%.2ft))', lambda, C1, omega_d, C2, omega_d);
             
         elseif lambda > omega_0 % Sobreamortiguado
             r1 = -lambda + sqrt(lambda^2 - omega_0^2);
             r2 = -lambda - sqrt(lambda^2 - omega_0^2);
             A = [exp(r1*t1), exp(r2*t1);
-                 r1*exp(r1*t2), r2*exp(r2*t2)];
+                 r1*exp(r1*t1), r2*exp(r2*t1)];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
             C2 = constants(2);
-            yc = sprintf('%.2fe^{%.2ft} + %.2fe^{%.2ft}', C1, r1, C2, r2);
             
         else % Críticamente amortiguado
             A = [exp(-lambda*t1), t1*exp(-lambda*t1);
-                 -lambda*exp(-lambda*t2), exp(-lambda*t2)*(1 - lambda*t2)];
+                 -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
             B = [yc_t1; yc_prime_t1];
             constants = A \ B;
             C1 = constants(1);
             C2 = constants(2);
-            yc = sprintf('(%.2f + %.2ft)e^{-%.2ft}', C1, C2, lambda);
         end
         
     catch ME
         errordlg(['Error: ' ME.message]);
     end
 
-    % --- Manejar índices y actualizar etiquetas ---
+    % --- Mostrar resultados ---
     if ~isempty(t_sol)
         current_index = find(t_sol >= current_time, 1);
         if isempty(current_index)
@@ -1195,7 +1201,19 @@ end
         end
         current_position = x_pos(current_index);
     end
-    
+
+    % --- Construir solución numérica ---
+    if ~isnan(C1) && ~isnan(C2)
+        if lambda < omega_0
+            yc = sprintf('e^{-%.2ft}(%.4fcos(%.2ft) + %.4fsin(%.2ft))',...
+                        lambda, C1, omega_d, C2, omega_d);
+        elseif lambda > omega_0
+            yc = sprintf('%.4fe^{%.2ft} + %.4fe^{%.2ft}', C1, r1, C2, r2);
+        else
+            yc = sprintf('(%.4f + %.4ft)e^{-%.2ft}', C1, C2, lambda);
+        end
+    end
+
     solutionLabel.Text = sprintf('Solución: y(t) = %s + %s', yc, yp);
     solutionAtTLabel.Text = sprintf('x(%.2f s) = %.4f ft', current_time, current_position);
 
@@ -1207,9 +1225,8 @@ end
         xlabel(ax, 'Tiempo (s)');
         ylabel(ax, yAxisTitle);
         grid(ax, 'on');
-        
-        ax.XLim = [min(t_sol) max(t_sol)];  % Ajusta eje X al rango simulado
-        ax.YLim = [min(x_pos)-0.5 max(x_pos)+0.5];  % Margen en Y
+        ax.XLim = [min(t_sol) max(t_sol)];
+        ax.YLim = [min(x_pos)-0.5 max(x_pos)+0.5];
     end
-    end
+end
 end
