@@ -1100,7 +1100,7 @@ function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
         yc = sprintf('(C₁ + C₂t)e^{-%.2ft}', lambda);
     end
 
-    % --- Calcular solución particular (yp) ---
+    % --- Calcular solución particular (yp) y sus coeficientes ---
     try
         tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens');
         if ~isempty(tokens)
@@ -1113,14 +1113,34 @@ function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
                     X = F0 / sqrt((k - m*gamma^2)^2 + (beta*gamma)^2);
                     phi = atan2(beta*gamma, k - m*gamma^2);
                     yp = sprintf('%.2f%s(%.2ft - %.2f)', X, func_type, gamma, phi);
+                    
+                    % Coeficientes de yp(t) = X*cos(γt - φ) para C₁ y C₂
+                    coef_C1_yp = X * cos(phi);  % Coef. de C₁ en yp(t)
+                    coef_C2_yp = X * sin(phi);  % Coef. de C₂ en yp(t)
+                    coef_C1_yp_prime = -X * gamma * sin(phi); % Coef. de C₁ en yp'(t)
+                    coef_C2_yp_prime = X * gamma * cos(phi);  % Coef. de C₂ en yp'(t)
+                    
                 case 'exp'
                     yp = sprintf('%.2fe^{%.2ft}', F0, gamma);
+                    % Coeficientes para yp(t) = A*e^(γt) (no depende de C₁/C₂)
+                    coef_C1_yp = 0;
+                    coef_C2_yp = 0;
+                    coef_C1_yp_prime = 0;
+                    coef_C2_yp_prime = 0;
                 otherwise
                     yp = F_t_str;
+                    coef_C1_yp = 0;
+                    coef_C2_yp = 0;
+                    coef_C1_yp_prime = 0;
+                    coef_C2_yp_prime = 0;
             end
         end
     catch
-        % Mantener valor por defecto si hay error
+        yp = '[Error en yp]';
+        coef_C1_yp = 0;
+        coef_C2_yp = 0;
+        coef_C1_yp_prime = 0;
+        coef_C2_yp_prime = 0;
     end
 
     % --- Resolver numéricamente ---
@@ -1144,71 +1164,60 @@ function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
             y_prime_t1 = x_sol(2, 1);
         end
 
-        % --- Calcular yp(t1) y yp'(t1) NUMÉRICAMENTE ---
-        try
-            yp_func = str2func(['@(t) ' strrep(yp, 't', 't')]);
-            yp_t1 = yp_func(t1);
-            h = 1e-5; % Paso para derivada numérica
-            yp_prime_t1 = (yp_func(t1 + h) - yp_func(t1)) / h;
-        catch
-            yp_t1 = 0;
-            yp_prime_t1 = 0;
-        end
-
-        % --- Ajustar condiciones para yc ---
-        yc_t1 = y_t1 - yp_t1;
-        yc_prime_t1 = y_prime_t1 - yp_prime_t1;
-
-        % --- Calcular C1 y C2 ---
+        % --- Calcular C₁ y C₂ ---
         if lambda < omega_0 % Subamortiguado
             omega_d = sqrt(omega_0^2 - lambda^2);
             
             % Coeficientes de yc(t)
-            coef_C1_yc = exp(-lambda*t1)*cos(omega_d*t1);
-            coef_C2_yc = exp(-lambda*t1)*sin(omega_d*t1);
-            coef_C1_yc_prime = exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1));
-            coef_C2_yc_prime = exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1));
+            coef_C1_yc = exp(-lambda*t1) * cos(omega_d*t1);
+            coef_C2_yc = exp(-lambda*t1) * sin(omega_d*t1);
+            coef_C1_yc_prime = exp(-lambda*t2) * (-lambda*cos(omega_d*t2) - omega_d*sin(omega_d*t2));
+            coef_C2_yc_prime = exp(-lambda*t2) * (-lambda*sin(omega_d*t2) + omega_d*cos(omega_d*t2));
             
-            A = [coef_C1_yc, coef_C2_yc;
-                coef_C1_yc_prime, coef_C2_yc_prime];
-            B = [y_t1; y_prime_t1];  % ¡Usamos las condiciones iniciales directas!
+            % Matriz A (suma de coeficientes de yc y yp)
+            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
+                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
             
         elseif lambda > omega_0 % Sobreamortiguado
             r1 = -lambda + sqrt(lambda^2 - omega_0^2);
             r2 = -lambda - sqrt(lambda^2 - omega_0^2);
             
-            A = [exp(r1*t1), exp(r2*t1);
-                r1*exp(r1*t1), r2*exp(r2*t1)];
-            B = [y_t1; y_prime_t1];
+            % Coeficientes de yc(t)
+            coef_C1_yc = exp(r1*t1);
+            coef_C2_yc = exp(r2*t1);
+            coef_C1_yc_prime = r1 * exp(r1*t2);
+            coef_C2_yc_prime = r2 * exp(r2*t2);
+            
+            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
+                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
             
         else % Críticamente amortiguado
-            A = [exp(-lambda*t1), t1*exp(-lambda*t1);
-                -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
-            B = [y_t1; y_prime_t1];
+            % Coeficientes de yc(t)
+            coef_C1_yc = exp(-lambda*t1);
+            coef_C2_yc = t1 * exp(-lambda*t1);
+            coef_C1_yc_prime = -lambda * exp(-lambda*t2);
+            coef_C2_yc_prime = (1 - lambda*t1) * exp(-lambda*t2);
+            
+            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
+                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
         end
-
+        
+        % Vector B (condiciones iniciales completas)
+        B = [y_t1;
+             y_prime_t1];
+        
+        % Resolver para C₁ y C₂
         constants = A \ B;
         C1 = constants(1);
         C2 = constants(2);
-        
     catch ME
         errordlg(['Error: ' ME.message]);
     end
 
-    % --- Mostrar resultados ---
-    if ~isempty(t_sol)
-        current_index = find(t_sol >= current_time, 1);
-        if isempty(current_index)
-            current_index = numel(t_sol);
-        end
-        current_position = x_pos(current_index);
-    end
-
-    % --- Construir solución numérica ---
+    % --- Mostrar solución numérica ---
     if ~isnan(C1) && ~isnan(C2)
         if lambda < omega_0
-            yc = sprintf('e^{-%.2ft}(%.4fcos(%.2ft) + %.4fsin(%.2ft))',...
-                        lambda, C1, omega_d, C2, omega_d);
+            yc = sprintf('e^{-%.2ft}(%.4fcos(%.2ft) + %.4fsin(%.2ft))', lambda, C1, omega_d, C2, omega_d);
         elseif lambda > omega_0
             yc = sprintf('%.4fe^{%.2ft} + %.4fe^{%.2ft}', C1, r1, C2, r2);
         else
@@ -1216,6 +1225,7 @@ function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
         end
     end
 
+    % --- Actualizar interfaz ---
     solutionLabel.Text = sprintf('Solución: y(t) = %s + %s', yc, yp);
     solutionAtTLabel.Text = sprintf('x(%.2f s) = %.4f ft', current_time, current_position);
 
