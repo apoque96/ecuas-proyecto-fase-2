@@ -1162,32 +1162,34 @@ function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
         % --- Calcular C1 y C2 ---
         if lambda < omega_0 % Subamortiguado
             omega_d = sqrt(omega_0^2 - lambda^2);
-            A = [exp(-lambda*t1)*cos(omega_d*t1), exp(-lambda*t1)*sin(omega_d*t1);
-                 exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1)),...
-                 exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1))];
-            B = [yc_t1; yc_prime_t1];
-            constants = A \ B;
-            C1 = constants(1);
-            C2 = constants(2);
+            
+            % Coeficientes de yc(t)
+            coef_C1_yc = exp(-lambda*t1)*cos(omega_d*t1);
+            coef_C2_yc = exp(-lambda*t1)*sin(omega_d*t1);
+            coef_C1_yc_prime = exp(-lambda*t1)*(-lambda*cos(omega_d*t1) - omega_d*sin(omega_d*t1));
+            coef_C2_yc_prime = exp(-lambda*t1)*(-lambda*sin(omega_d*t1) + omega_d*cos(omega_d*t1));
+            
+            A = [coef_C1_yc, coef_C2_yc;
+                coef_C1_yc_prime, coef_C2_yc_prime];
+            B = [y_t1; y_prime_t1];  % ¡Usamos las condiciones iniciales directas!
             
         elseif lambda > omega_0 % Sobreamortiguado
             r1 = -lambda + sqrt(lambda^2 - omega_0^2);
             r2 = -lambda - sqrt(lambda^2 - omega_0^2);
+            
             A = [exp(r1*t1), exp(r2*t1);
-                 r1*exp(r1*t1), r2*exp(r2*t1)];
-            B = [yc_t1; yc_prime_t1];
-            constants = A \ B;
-            C1 = constants(1);
-            C2 = constants(2);
+                r1*exp(r1*t1), r2*exp(r2*t1)];
+            B = [y_t1; y_prime_t1];
             
         else % Críticamente amortiguado
             A = [exp(-lambda*t1), t1*exp(-lambda*t1);
-                 -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
-            B = [yc_t1; yc_prime_t1];
-            constants = A \ B;
-            C1 = constants(1);
-            C2 = constants(2);
+                -lambda*exp(-lambda*t1), exp(-lambda*t1)*(1 - lambda*t1)];
+            B = [y_t1; y_prime_t1];
         end
+
+        constants = A \ B;
+        C1 = constants(1);
+        C2 = constants(2);
         
     catch ME
         errordlg(['Error: ' ME.message]);
