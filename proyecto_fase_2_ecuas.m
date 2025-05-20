@@ -262,14 +262,14 @@ function outerFunction()
         positions();
     
     % Define callback function
-    fig.SizeChangedFcn = @(src, event) figSizeChange(src, ax, leftPanel, rightPanel, ...
+    fig.SizeChangedFcn = @(src, event) figSizeChange(src, leftPanel, rightPanel, ...
         bg);
     
     
-    figSizeChange(fig, ax, leftPanel, rightPanel, bg);
+    figSizeChange(fig, leftPanel, rightPanel, bg);
     
     % Resizes the panels
-    function figSizeChange(figHandle, ax, leftPanelHandle, rightPanelHandle, bgHandle)
+    function figSizeChange(figHandle, leftPanelHandle, rightPanelHandle, bgHandle)
         pos = figHandle.Position;
         minWidth = 275;
         newWidth = pos(3) * 0.3;
@@ -284,81 +284,6 @@ function outerFunction()
         
         leftPanelHandle.Position(4) = pos(4);
         bgHandle.Position(2) = pos(4)-150;
-    end
-
-    function onWeightChange(~, ~)
-        massValue.Value = weight.Value / 32;
-        kValue.Value = weight.Value / xValue.Value;
-        wSquaredValue.Value = kValue.Value / massValue.Value;
-        wValue.Value = sqrt(wSquaredValue.Value);
-        lambdaValue.Value = betaValue.Value / massValue.Value;
-        plotFunction();
-    end
-    
-    function onKChange(~, ~)
-        %weight.Value = kValue.Value * xValue.Value;
-        %massValue.Value = weight.Value / 32;
-        wSquaredValue.Value = kValue.Value / massValue.Value;
-        wValue.Value = sqrt(wSquaredValue.Value);
-        plotFunction();
-    end
-    
-    function onMassChange(~, ~)
-        weight.Value = massValue.Value * 32;
-        kValue.Value = weight.Value / xValue.Value;
-        wSquaredValue.Value = kValue.Value / massValue.Value;
-        wValue.Value = sqrt(wSquaredValue.Value);
-        lambdaValue.Value = betaValue.Value / massValue.Value;
-        plotFunction();
-    end
-
-    function onBetaChange(~, ~)
-        lambdaValue.Value = betaValue.Value / massValue.Value;
-        plotFunction();
-    end
-
-    function onLambdaChange(~, ~)
-        betaValue.Value = lambdaValue.Value * massValue.Value;
-        plotFunction();
-    end
-
-    function onWSquaredChange(src, ~)
-        kValue.Value = massValue.Value * src.Value;
-        wValue.Value = sqrt(src.Value);
-        plotFunction();
-    end
-
-    function onWChange(src, ~)
-        wSquaredValue.Value = src.Value^2;
-        kValue.Value = massValue.Value * wSquaredValue.Value;
-        plotFunction();
-    end
-
-    function onXChange(~, ~)
-        if ~isequal(kValue.Value, weight.Value / xValue.Value)
-            kValue.Value = weight.Value / xValue.Value;
-        end
-        plotFunction();
-    end
-    
-    function onTChange(~, ~)
-        plotFunction();
-    end
-    
-    function onT1Change(~, ~)
-        plotFunction();
-    end
-    
-    function onT2Change(~, ~)
-        plotFunction();
-    end
-
-    function onXt1Change(~, ~)
-        plotFunction();
-    end
-    
-    function onXt2Change(~, ~)
-        plotFunction();
     end
 
     function hideAllElements()
@@ -389,9 +314,6 @@ function outerFunction()
 
         F0Label.Visible         = 'off';
         F0Value.Visible         = 'off';
-        
-        %gammaLabel.Visible      = 'off';
-        %gammaValue.Visible      = 'off';
 
         lLabel.Visible          = 'off';
         lValue.Visible          = 'off';
@@ -576,7 +498,7 @@ function outerFunction()
     end
 
     function forzedPositions()
-        currentY = 1070; % Posición Y inicial
+        currentY = 1250; % Posición Y inicial
         verticalStep = 50; % Espaciado vertical entre elementos
 
         % Weight (W)
@@ -672,11 +594,11 @@ function outerFunction()
         currentY = currentY - 50;
 
         solutionAtTLabel.Position = [10, currentY, 500, 22];
-        solutionLabel.Position = [10, currentY-20, 500, 22];
+        solutionLabel.Position = [10, currentY-220, 1000, 220];
     end
 
     function chargePositions()
-        currentY = 820; % Posición Y inicial
+        currentY = 1000; % Posición Y inicial
         verticalStep = 50; % Espaciado vertical entre elementos
 
         % L
@@ -737,11 +659,11 @@ function outerFunction()
         currentY = currentY - 50;
 
         solutionAtTLabel.Position = [10, currentY, 800, 22];
-        solutionLabel.Position = [10, currentY-20, 800, 22];
+        solutionLabel.Position = [10, currentY-220, 1000, 220];
     end
 
     function currentPositions()
-        currentY = 820; % Posición Y inicial
+        currentY = 1000; % Posición Y inicial
         verticalStep = 50; % Espaciado vertical entre elementos
 
         % L
@@ -802,11 +724,13 @@ function outerFunction()
         currentY = currentY - 50;
 
         solutionAtTLabel.Position = [10, currentY, 800, 22];
-        solutionLabel.Position = [10, currentY-20, 800, 22];
+        solutionLabel.Position = [10, currentY-220, 1000, 220];
     end
 
 
     function plotFunction()
+        cla(ax);                         % Limpiar ejes antes de graficar
+        grid(ax, 'on');
         switch application
             case 0
                 plotUndamped();
@@ -822,17 +746,57 @@ function outerFunction()
     end
 
     function plotUndamped()
-        % Solve for the constants of the equation
-        A = [cos(wValue.Value * t1Value.Value), sin(wValue.Value * t1Value.Value); ...
-            (-1 * wValue.Value * sin(wValue.Value * t2Value.Value)), ...
-            (wValue.Value * cos(wValue.Value * t2Value.Value)) ]; 
+        % Initialize variables
+        w = wValue.Value;
+        wSquared = wSquaredValue.Value;
+        x = xValue.Value;
+        t1 = t1Value.Value;
+        t2 = t2Value.Value;
+        xt1 = xt1Value.Value;
+        xt2 = xt2Value.Value;
+        current_time = tValue.Value;
 
-        B = [xt1Value.Value; xt2Value.Value];
+        % Check the values that need to be calculated
+        if w == 0
+            if wSquared == 0
+                k = kValue.Value;
+                % It suddenly turned into spanish
+                peso = weight.Value;
+                m = massValue.Value;
+
+                if m == 0
+                    if peso == 0
+                            errordlg('Error: not enough data');
+                        return;
+                    end
+                    m = peso / 32;
+                end
+
+                if peso == 0
+                    peso = m * 32;
+                end
+
+                if k == 0
+                    k = peso / x;
+                end
+
+                wSquared = k / m;
+            end
+
+            w = sqrt(wSquared);
+        end
+
+        % Solve for the constants of the equation
+        A = [cos(w * t1), sin(w * t1); ...
+            (-1 * w * sin(w * t2)), ...
+            (w * cos(w * t2)) ]; 
+
+        B = [xt1; xt2];
 
         constants = A \ B;
 
-        solutionAtTLabel.Text = "x(t) = " + string(constants(1) * cos(wValue.Value * ...
-            tValue.Value) + constants(2) * sin(wValue.Value * tValue.Value));
+        solutionAtTLabel.Text = "x(" + current_time + ") = " + string(constants(1) * cos(w * ...
+            current_time) + constants(2) * sin(w * current_time));
 
         % Equation solution
         solutionLabel.Text = "Solución de la ecuación: ";
@@ -840,7 +804,7 @@ function outerFunction()
         if constants(1) ~= 0
             solutionLabel.Text = solutionLabel.Text ...
                 + string(constants(1)) ...
-                + "cos(" + string(wValue.Value) + "t)";
+                + "cos(" + string(w) + "t)";
             addPlus = true;
         end
         if constants(2) ~= 0
@@ -849,10 +813,7 @@ function outerFunction()
             end
             solutionLabel.Text = solutionLabel.Text ...
                 + string(constants(2)) ...
-                + "sin(" + string(wValue.Value) + "t)";
-        end
-        if constants(1) == 0 && constants(2) == 0
-            solutionLabel.Text = solutionLabel.Text + "0";
+                + "sin(" + string(w) + "t)";
         end
 
     
@@ -862,13 +823,13 @@ function outerFunction()
             A = (constants(1).^2 + constants(2).^2).^(1/2);
             angle = atan(constants(1) / constants(2));
             alternativeSolutionLabel.Text = "Forma alternativa de la ecuación: "...
-                + string(A) + "sen(" + string(wValue.Value) + ...
+                + string(A) + "sen(" + string(w) + ...
                 "t + " + string(angle) + ")";
         elseif (constants(1) > 0 && constants(2) < 0) || (constants(1) < 0 && constants(2) < 0)
             A = (constants(1).^2 + constants(2).^2).^(1/2);
             angle = atan(constants(1) / constants(2)) + pi;
             alternativeSolutionLabel.Text = "Forma alternativa de la ecuación: "...
-                + string(A) + "sen(" + string(wValue.Value) + ...
+                + string(A) + "sen(" + string(w) + ...
                 "t + " + string(angle) + ")";
         else
             alternativeSolutionLabel.Text = "";
@@ -877,7 +838,7 @@ function outerFunction()
 
         % Plots the function
         x = linspace(0, 100, 10000);
-        y = constants(1) * cos(wValue.Value * x) + constants(2) * sin(wValue.Value * x);
+        y = constants(1) * cos(w * x) + constants(2) * sin(w * x);
 
         plot(ax, x, y);
         title(ax, 'Resortes: Movimiento no amortiguado');
@@ -885,8 +846,61 @@ function outerFunction()
     end
 
  function plotDamped()
-    lambda = lambdaValue.Value / 2;
-    root = lambda.^2 - wSquaredValue.Value;
+% Initialize variables
+    w = wValue.Value;
+    wSquared = wSquaredValue.Value;
+    x = xValue.Value;
+    beta = betaValue.Value;
+    twoLambda = lambdaValue.Value;
+    t1 = t1Value.Value;
+    t2 = t2Value.Value;
+    xt1 = xt1Value.Value;
+    xt2 = xt2Value.Value;
+    current_time = tValue.Value;
+
+    % Check the values that need to be calculated
+    if w == 0
+        if wSquared == 0
+            k = kValue.Value;
+            % It suddenly turned into spanish
+            peso = weight.Value;
+            m = massValue.Value;
+
+            if m == 0
+                if peso == 0
+                        errordlg('Error: not enough data');
+                    return;
+                end
+                m = peso / 32;
+            end
+
+            if peso == 0
+                peso = m * 32
+            end
+
+            if k == 0
+                k = peso / x
+            end
+
+            wSquared = k / m
+        end
+
+        w = sqrt(wSquared);
+    end
+    if twoLambda == 0
+        if beta == 0
+            errordlg('Error: not enough data');
+        end
+
+        twoLambda = beta / m;
+    end
+
+    if beta == 0
+        beta = twoLambda * m;
+    end
+
+    lambda = twoLambda / 2;
+    root = lambda.^2 - wSquared;
     
     if root > 0
         % Overdamped case: two real distinct roots
@@ -894,14 +908,14 @@ function outerFunction()
         r2 = -lambda - sqrt(root);
         
         % Solve for the constants of the equation
-        A = [exp(r1 * t1Value.Value), exp(r2 * t1Value.Value); ...
-             r1 * exp(r1 * t2Value.Value), r2 * exp(r2 * t2Value.Value)];
-        B = [xt1Value.Value; xt2Value.Value];
+        A = [exp(r1 * t1), exp(r2 * t1); ...
+             r1 * exp(r1 * t2), r2 * exp(r2 * t2)];
+        B = [xt1; xt2];
         constants = A \ B;
         
         % Display solution at time t
-        solutionAtTLabel.Text = "x(t) = " + string(constants(1) * exp(r1 * tValue.Value) + ...
-                                constants(2) * exp(r2 * tValue.Value));
+        solutionAtTLabel.Text = "x(" + current_time + ") = " + string(constants(1) * exp(r1 * current_time) + ...
+                                constants(2) * exp(r2 * current_time));
         
         % Equation solution
         solutionLabel.Text = "Solución de la ecuación: ";
@@ -940,15 +954,15 @@ function outerFunction()
         r = -lambda;
         
         % Solve for the constants of the equation
-        A = [exp(r * t1Value.Value), t1Value.Value * exp(r * t1Value.Value); ...
-             r * exp(r * t2Value.Value), ...
-             r * t2Value.Value * exp(r * t2Value.Value) + exp(r * t2Value.Value)];
-        B = [xt1Value.Value; xt2Value.Value];
+        A = [exp(r * t1), t1 * exp(r * t1); ...
+             r * exp(r * t2), ...
+             r * t2 * exp(r * t2) + exp(r * t2)];
+        B = [xt1; xt2];
         constants = A \ B;
         
         % Display solution at time t
-        solutionAtTLabel.Text = "x(t) = " + string(constants(1) * exp(r * tValue.Value) + ...
-                               constants(2) * tValue.Value * exp(r * tValue.Value));
+        solutionAtTLabel.Text = "x( " + current_time + ") = " + string(constants(1) * exp(r * current_time) + ...
+                               constants(2) * current_time * exp(r * current_time));
         
         % Equation solution
         solutionLabel.Text = "Solución de la ecuación: ";
@@ -987,17 +1001,17 @@ function outerFunction()
         w_d = sqrt(-root);  % Damped natural frequency
         
         % Solve for the constants of the equation
-        A = [exp(-lambda * t1Value.Value) * cos(w_d * t1Value.Value), ...
-             exp(-lambda * t1Value.Value) * sin(w_d * t1Value.Value); ...
-             ((-lambda) * exp(-lambda * t2Value.Value) * cos(w_d * t2Value.Value) - exp(-lambda * t2Value.Value) * w_d * sin(w_d * t2Value.Value)), ...
-             (-lambda) * exp(-lambda * t2Value.Value) * sin(w_d * t2Value.Value) + exp(-lambda * t2Value.Value) * w_d * cos(w_d * t2Value.Value)]
-        B = [xt1Value.Value; xt2Value.Value];
+        A = [exp(-lambda * t1) * cos(w_d * t1), ...
+             exp(-lambda * t1) * sin(w_d * t1); ...
+             ((-lambda) * exp(-lambda * t2) * cos(w_d * t2) - exp(-lambda * t2) * w_d * sin(w_d * t2)), ...
+             (-lambda) * exp(-lambda * t2) * sin(w_d * t2) + exp(-lambda * t2) * w_d * cos(w_d * t2)];
+        B = [xt1; xt2];
         constants = A \ B;
         
         % Display solution at time t
-        solutionAtTLabel.Text = "x(t) = " + ...
-            string(exp(-lambda * tValue.Value) * (constants(1) * cos(w_d * tValue.Value) + ...
-            constants(2) * sin(w_d * tValue.Value)));
+        solutionAtTLabel.Text = "x(" + current_time + ") = " + ...
+            string(exp(-lambda * current_time) * (constants(1) * cos(w_d * current_time) + ...
+            constants(2) * sin(w_d * current_time)));
         
         % Equation solution
         solutionLabel.Text = "Solución de la ecuación: e^(-" + string(lambda) + "t)·(";
@@ -1045,10 +1059,54 @@ function outerFunction()
 end
 
     function plotForzed()
-        m = massValue.Value;
+w = wValue.Value;
+        wSquared = wSquaredValue.Value;
+        x = xValue.Value;
         beta = betaValue.Value;
+        twoLambda = lambdaValue.Value;
+        m = massValue.Value;
         k = kValue.Value;
         F_t_str = F0Value.Value;
+    
+        % Check the values that need to be calculated
+        if w == 0
+            if wSquared == 0
+                % It suddenly turned into spanish
+                peso = weight.Value;
+    
+                if m == 0
+                    if peso == 0
+                            errordlg('Error: not enough data');
+                        return;
+                    end
+                    m = peso / 32;
+                end
+    
+                if peso == 0
+                    peso = m * 32
+                end
+    
+                if k == 0
+                    k = peso / x
+                end
+    
+                wSquared = k / m
+            end
+    
+            w = sqrt(wSquared);
+        end
+        if twoLambda == 0
+            if beta == 0
+                errordlg('Error: not enough data');
+            end
+    
+            twoLambda = beta / m;
+        end
+    
+        if beta == 0
+            beta = twoLambda * m;
+        end
+
         plotNoHomogeneus(m, beta, k, F_t_str, "Movimiento forzado", "x (Desplazamiento)")
     end
 
@@ -1069,176 +1127,63 @@ end
     end
 
 function plotNoHomogeneus(m, beta, k, F_t_str, plotTitle, yAxisTitle)
-    % --- Obtener parámetros de la interfaz ---
-    t1 = t1Value.Value;
-    x1 = xt1Value.Value;
-    t2 = t2Value.Value;
-    x2_prime = xt2Value.Value;
-    current_time = tValue.Value;
-
-    % --- Inicializar variables ---
-    yc = ''; 
-    yp = '[Solución Particular]'; 
-    C1 = nan;
-    C2 = nan;
-    t_sol = [];
-    x_pos = [];
-    current_position = 0;
-
-    % --- Calcular solución homogénea (yc) ---
-    lambda = beta / (2*m);
-    omega_0 = sqrt(k/m);
+    try
+        % --- Obtener parámetros de la interfaz ---
+        t1 = t1Value.Value;
+        x1 = xt1Value.Value;
+        t2 = t2Value.Value;
+        x2_prime = xt2Value.Value;
+        current_time = tValue.Value;
     
-    if lambda < omega_0
-        omega_d = sqrt(omega_0^2 - lambda^2);
-        yc = sprintf('e^{-%.2ft}(C₁cos(%.2ft) + C₂sin(%.2ft))', lambda, omega_d);
-    elseif lambda > omega_0
-        r1 = -lambda + sqrt(lambda^2 - omega_0^2);
-        r2 = -lambda - sqrt(lambda^2 - omega_0^2);
-        yc = sprintf('C₁e^{%.2ft} + C₂e^{%.2ft}', r1, r2);
-    else
-        yc = sprintf('(C₁ + C₂t)e^{-%.2ft}', lambda);
-    end
-
-    % --- Calcular solución particular (yp) y sus coeficientes ---
-    try
-        tokens = regexp(F_t_str, '(-?\d+\.?\d*)\*?(cos|sin|exp)?\(?(-?\d+\.?\d*)?t?\)?', 'tokens');
-        if ~isempty(tokens)
-            F0 = str2double(tokens{1}{1});
-            func_type = tokens{1}{2};
-            gamma = str2double(tokens{1}{3});
-            
-            switch func_type
-                case {'cos', 'sin'}
-                    X = F0 / sqrt((k - m*gamma^2)^2 + (beta*gamma)^2);
-                    phi = atan2(beta*gamma, k - m*gamma^2);
-                    yp = sprintf('%.2f%s(%.2ft - %.2f)', X, func_type, gamma, phi);
-                    
-                    % Coeficientes de yp(t) = X*cos(γt - φ) para C₁ y C₂
-                    coef_C1_yp = X * cos(phi);  % Coef. de C₁ en yp(t)
-                    coef_C2_yp = X * sin(phi);  % Coef. de C₂ en yp(t)
-                    coef_C1_yp_prime = -X * gamma * sin(phi); % Coef. de C₁ en yp'(t)
-                    coef_C2_yp_prime = X * gamma * cos(phi);  % Coef. de C₂ en yp'(t)
-                    
-                case 'exp'
-                    yp = sprintf('%.2fe^{%.2ft}', F0, gamma);
-                    % Coeficientes para yp(t) = A*e^(γt) (no depende de C₁/C₂)
-                    coef_C1_yp = 0;
-                    coef_C2_yp = 0;
-                    coef_C1_yp_prime = 0;
-                    coef_C2_yp_prime = 0;
-                otherwise
-                    yp = F_t_str;
-                    coef_C1_yp = 0;
-                    coef_C2_yp = 0;
-                    coef_C1_yp_prime = 0;
-                    coef_C2_yp_prime = 0;
-            end
-        end
-    catch
-        yp = '[Error en yp]';
-        coef_C1_yp = 0;
-        coef_C2_yp = 0;
-        coef_C1_yp_prime = 0;
-        coef_C2_yp_prime = 0;
-    end
-
-    % --- Resolver numéricamente ---
-    try
-        F_t = str2func(['@(t)' F_t_str]);
+        % --- Definir variable simbólica y resolver simbólicamente ---
+        t     = sym('t');  
+        y_sym = symfun( str2sym('y(t)'), t );   % y_sym is now a symbolic function of t
         
-        if t1 == t2 % IVP (ode45)
-            [t_sol, x_sol] = ode45(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m],...
-                                  [t1, t1+10], [x1; x2_prime]);
-            x_pos = x_sol(:, 1);
-            y_t1 = x_sol(1, 1);
-            y_prime_t1 = x_sol(1, 2);
-        else % BVP (bvp4c)
-            sol = bvp4c(@(t,x) [x(2); (F_t(t) - beta*x(2) - k*x(1))/m],...
-                       @(xa,xb) [xa(1)-x1; xb(2)-x2_prime],...
-                       bvpinit(linspace(min(t1,t2), max(t1,t2), 100), [0; 0]));
-            t_sol = linspace(min(t1,t2), max(t1,t2), 1000);
-            x_sol = deval(sol, t_sol);
-            x_pos = x_sol(1, :)';
-            y_t1 = x_sol(1, 1);
-            y_prime_t1 = x_sol(2, 1);
-        end
-
-        % --- Calcular C₁ y C₂ ---
-        if lambda < omega_0 % Subamortiguado
-            omega_d = sqrt(omega_0^2 - lambda^2);
-            
-            % Coeficientes de yc(t)
-            coef_C1_yc = exp(-lambda*t1) * cos(omega_d*t1);
-            coef_C2_yc = exp(-lambda*t1) * sin(omega_d*t1);
-            coef_C1_yc_prime = exp(-lambda*t2) * (-lambda*cos(omega_d*t2) - omega_d*sin(omega_d*t2));
-            coef_C2_yc_prime = exp(-lambda*t2) * (-lambda*sin(omega_d*t2) + omega_d*cos(omega_d*t2));
-            
-            % Matriz A (suma de coeficientes de yc y yp)
-            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
-                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
-            
-        elseif lambda > omega_0 % Sobreamortiguado
-            r1 = -lambda + sqrt(lambda^2 - omega_0^2);
-            r2 = -lambda - sqrt(lambda^2 - omega_0^2);
-            
-            % Coeficientes de yc(t)
-            coef_C1_yc = exp(r1*t1);
-            coef_C2_yc = exp(r2*t1);
-            coef_C1_yc_prime = r1 * exp(r1*t2);
-            coef_C2_yc_prime = r2 * exp(r2*t2);
-            
-            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
-                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
-            
-        else % Críticamente amortiguado
-            % Coeficientes de yc(t)
-            coef_C1_yc = exp(-lambda*t1);
-            coef_C2_yc = t1 * exp(-lambda*t1);
-            coef_C1_yc_prime = -lambda * exp(-lambda*t2);
-            coef_C2_yc_prime = (1 - lambda*t1) * exp(-lambda*t2);
-            
-            A = [coef_C1_yc + coef_C1_yp,    coef_C2_yc + coef_C2_yp;
-                 coef_C1_yc_prime + coef_C1_yp_prime,  coef_C2_yc_prime + coef_C2_yp_prime];
-        end
+        Dy  = diff(y_sym, t);
+        D2y = diff(y_sym, t, 2);
         
-        % Vector B (condiciones iniciales completas)
-        B = [y_t1;
-             y_prime_t1];
+        % Convertir la fuerza en función simbólica
+        f_sym = str2sym(F_t_str);
         
-        % Resolver para C₁ y C₂
-        constants = A \ B;
-        C1 = constants(1);
-        C2 = constants(2);
-    catch ME
-        errordlg(['Error: ' ME.message]);
-    end
+        % Definir la ecuación diferencial
+        eqn = D2y + (beta/m)*Dy + (k/m)*y_sym == f_sym;
+        
+        % Condiciones iniciales
+        cond1 = y_sym(t1)   == x1;
+        cond2 = Dy(t2)      == x2_prime;
+        
+        % Resolver
+        ySol = dsolve(eqn, cond1, cond2);
+        
+        % Mostrar la solución en el label
+        solutionLabel.Text = sprintf('Solución: y(t) = %s', ySol);
+    
+        % --- Preparar plot ---
+        % Convertir solución simbólica a función numérica
+        y_fun = matlabFunction(ySol, 'Vars', t);
+    
+        t_vec = linspace(0, 100, 10000);
+    
+        % Evaluar la solución
+        y_vec = y_fun(t_vec);
 
-    % --- Mostrar solución numérica ---
-    if ~isnan(C1) && ~isnan(C2)
-        if lambda < omega_0
-            yc = sprintf('e^{-%.2ft}(%.4fcos(%.2ft) + %.4fsin(%.2ft))', lambda, C1, omega_d, C2, omega_d);
-        elseif lambda > omega_0
-            yc = sprintf('%.4fe^{%.2ft} + %.4fe^{%.2ft}', C1, r1, C2, r2);
-        else
-            yc = sprintf('(%.4f + %.4ft)e^{-%.2ft}', C1, C2, lambda);
-        end
-    end
-
-    % --- Actualizar interfaz ---
-    solutionLabel.Text = sprintf('Solución: y(t) = %s + %s', yc, yp);
-    solutionAtTLabel.Text = sprintf('x(%.2f s) = %.4f ft', current_time, current_position);
-
-    % --- Graficar ---
-    cla(ax);
-    if ~isempty(t_sol) && ~isempty(x_pos)
-        plot(ax, t_sol, x_pos, 'b-', 'LineWidth', 1.5);
-        title(ax, plotTitle);
+        % Display solution at time t
+        solutionAtTLabel.Text = "x(" + current_time + ") = " + ...
+            string(y_fun(current_time));
+    
+        % --- Graficar ---
+        cla(ax);                         % Limpiar ejes antes de graficar
+        plot(ax, t_vec, y_vec, 'LineWidth', 1.8);
+        hold(ax, 'on');
+        yline(ax, 0, 'k-', 'LineWidth', 1.2);
+        hold(ax, 'off');
+        
+        title(ax, plotTitle, 'Interpreter', 'none');
         xlabel(ax, 'Tiempo (s)');
         ylabel(ax, yAxisTitle);
         grid(ax, 'on');
-        ax.XLim = [min(t_sol) max(t_sol)];
-        ax.YLim = [min(x_pos)-0.5 max(x_pos)+0.5];
+    catch ME
+        errordlg()
     end
 end
 end
